@@ -145,6 +145,9 @@ class Converter:
                 sub_ctx, f"{env}/properties/{name}", node["properties"].get(name, {})
             )
 
+        if len(node["properties"]) <= 0:
+            del node["properties"]
+
         return node
 
     # ---------------- array ----------------
