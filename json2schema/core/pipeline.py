@@ -2,12 +2,6 @@ from typing import Any, Dict, List
 from .comparators.template import Resource, Comparator, ProcessingContext
 import logging
 
-def merge(a: Dict, b: Dict) -> Dict:
-    r = dict(a)
-    r.update(b)
-    return r
-
-
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
@@ -30,102 +24,138 @@ class Converter:
     def register(self, c: Comparator):
         self._comparators.append(c)
 
-    def _collect_prop_names(self, schemas: List[Resource], jsons: List[Resource]) -> List[str]:
-        """
-        Собираем имена свойств из схем (properties) и из json-объектов (ключи словарей).
-        Возвращаем отсортированный детерминированный список.
-        """
+    # ---------------- utils ----------------
+
+    def _collect_prop_names(self, schemas, jsons):
         names = set()
-        # from schemas
         for s in schemas:
-            if isinstance(s.content, dict) and "properties" in s.content and isinstance(s.content["properties"], dict):
-                names.update(s.content["properties"].keys())
-        # from jsons
+            c = s.content
+            if isinstance(c, dict) and isinstance(c.get("properties"), dict):
+                names.update(c["properties"].keys())
         for j in jsons:
             if isinstance(j.content, dict):
                 names.update(j.content.keys())
         return sorted(names)
 
-    def _gather_property_candidates(self, schemas: List[Resource], jsons: List[Resource], prop: str):
-        """
-        Возвращаем два списка Resource:
-        - s_out: для каждой схемы, которая содержит property -> вложенный schema с тем же id
-        - j_out: для каждого json, где есть ключ prop -> значение с тем же id
-        """
-        s_out = []
-        j_out = []
+    def _gather_property_candidates(self, schemas, jsons, prop):
+        s_out, j_out = [], []
+
         for s in schemas:
             c = s.content
-            if isinstance(c, dict) and "properties" in c and isinstance(c["properties"], dict) and prop in c["properties"]:
+            if isinstance(c, dict) and prop in c.get("properties", {}):
                 s_out.append(Resource(s.id, "schema", c["properties"][prop]))
+
         for j in jsons:
             if isinstance(j.content, dict) and prop in j.content:
                 j_out.append(Resource(j.id, "json", j.content[prop]))
+
         return s_out, j_out
 
-    
-    def _run_level(self, ctx: ProcessingContext, env: str, prev_result: Dict) -> Dict:
-        """
-        Рекурсивная генерация схемы на уровне `env` с логированием.
-        """
-        node = dict(prev_result)
-        logger.debug("Entering _run_level: env=%s, prev_result=%s", env, prev_result)
+    def _split_array_ctx(self, ctx: ProcessingContext):
+        obj_jsons = []
+        item_jsons = []
 
-        # --- Применяем компараторы ---
+        for j in ctx.jsons:
+            if isinstance(j.content, list):
+                for el in j.content:
+                    item_jsons.append(Resource(j.id, "json", el))
+            else:
+                obj_jsons.append(j)
+
+        obj_schemas = []
+        item_schemas = []
+
+        for s in ctx.schemas:
+            c = s.content
+            if isinstance(c, dict) and c.get("type") == "array":
+                # schema массива → идёт в items
+                if "items" in c:
+                    item_schemas.append(Resource(s.id, "schema", c["items"]))
+            else:
+                # object / scalar schema → ТОЛЬКО в object
+                obj_schemas.append(s)
+
+        return (
+            ProcessingContext(obj_schemas, obj_jsons, ctx.sealed),
+            ProcessingContext(item_schemas, item_jsons, ctx.sealed),
+        )
+
+
+    # ---------------- core ----------------
+
+    def _run_level(self, ctx: ProcessingContext, env: str, prev: Dict) -> Dict:
+        logger.debug("Entering _run_level: env=%s, prev_result=%s", env, prev)
+        node = dict(prev)
+
         for comp in self._comparators:
             if not comp.can_process(ctx, env, node):
-                logger.debug("Comparator %s cannot process env=%s", comp.__class__.__name__, env)
                 continue
 
-            logger.debug("Running comparator %s at env=%s", comp.__class__.__name__, env)
             g, alts = comp.process(ctx, env, node)
             if g:
-                logger.debug("Comparator %s returned global update: %s", comp.__class__.__name__, g)
                 node.update(g)
-
             if alts:
-                logger.debug("Comparator %s returned alternatives: %s", comp.__class__.__name__, alts)
-                if "anyOf" in node:
-                    logger.debug("Merging alternatives into existing anyOf")
-                    node["anyOf"].extend(alts)
+                node.setdefault("anyOf", []).extend(alts)
+
+        if "anyOf" in node:
+            out = []
+            for alt in node["anyOf"]:
+                t = alt.get("type")
+
+                if t == "object":
+                    obj_ctx, _ = self._split_array_ctx(ctx)
+                    out.append(self._run_object(obj_ctx, env, alt))
+
+                elif t == "array":
+                    _, items_ctx = self._split_array_ctx(ctx)
+                    out.append(self._run_array(items_ctx, env, alt))
+
                 else:
-                    logger.debug("Creating new anyOf with alternatives")
-                    node["anyOf"] = alts
+                    out.append(alt)
 
-        # --- Рекурсивно обходим properties ---
-        prop_names = self._collect_prop_names(ctx.schemas, ctx.jsons)
-        if prop_names:
-            node.setdefault("properties", {})
-            for name in prop_names:
-                s_cands, j_cands = self._gather_property_candidates(ctx.schemas, ctx.jsons, name)
-                sub_ctx = ProcessingContext(s_cands, j_cands, sealed=ctx.sealed)
+            node["anyOf"] = out
+            return node
 
-                logger.debug("Recursing into property '%s', schemas=%s, jsons=%s", 
-                            name, [s.id for s in s_cands], [j.id for j in j_cands])
-                child_node = self._run_level(sub_ctx, env + f"/properties/{name}", {})
+        if node.get("type") == "object":
+            return self._run_object(ctx, env, node)
 
-                # Определяем массив
-                is_array = any(isinstance(j.content.get(name) if isinstance(j.content, dict) else None, list)
-                            for j in ctx.jsons)
-                array_triggers = [j.id for j in ctx.jsons if isinstance(j.content, dict) and name in j.content]
-
-                if is_array:
-                    arr_node: Dict[str, Any] = {
-                        "type": "array",
-                        "j2sElementTrigger": array_triggers,
-                        "items": child_node
-                    }
-                    logger.debug("Property '%s' is array, node=%s", name, arr_node)
-                    node["properties"][name] = arr_node
-                else:
-                    node["properties"][name] = child_node
-                    logger.debug("Property '%s' node=%s", name, child_node)
+        if node.get("type") == "array":
+            return self._run_array(ctx, env, node)
 
         logger.debug("Exiting _run_level: env=%s, node=%s", env, node)
         return node
 
+    # ---------------- object ----------------
 
+    def _run_object(self, ctx, env, node):
+        props = self._collect_prop_names(ctx.schemas, ctx.jsons)
+        if not props:
+            return node
+
+        node.setdefault("properties", {})
+
+        for name in props:
+            s, j = self._gather_property_candidates(ctx.schemas, ctx.jsons, name)
+            if not s and not j:
+                continue
+            sub = ProcessingContext(s, j, ctx.sealed)
+            node["properties"][name] = self._run_level(
+                sub, f"{env}/properties/{name}", {}
+            )
+
+        return node
+
+    # ---------------- array ----------------
+
+    def _run_array(self, items_ctx, env, node):
+        if not items_ctx.jsons:
+            return node
+
+        node["items"] = self._run_level(items_ctx, f"{env}/items", {})
+        return node
+
+    # ---------------- entry ----------------
 
     def run(self):
-        root_ctx = ProcessingContext(self._schemas, self._jsons, sealed=False)
-        return self._run_level(root_ctx, "/", {})
+        ctx = ProcessingContext(self._schemas, self._jsons, sealed=False)
+        return self._run_level(ctx, "/", {})
