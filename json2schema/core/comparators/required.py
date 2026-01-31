@@ -1,6 +1,4 @@
-from typing import List, Dict, Tuple, Optional, Set
-from copy import deepcopy
-from .template import ProcessingContext, Comparator, Resource
+from .template import ProcessingContext, Comparator
 import logging
 
 logger = logging.getLogger(__name__)

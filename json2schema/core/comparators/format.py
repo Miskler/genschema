@@ -1,6 +1,6 @@
 import re
 from typing import Optional, Any, Dict, List
-from .template import Comparator, ProcessingContext, ComparatorResult
+from .template import Comparator, ProcessingContext
 
 class FormatDetector:
     """Глобальный детектор форматов. Расширяем — просто добавляем в _registry."""
