@@ -1,11 +1,15 @@
-#!/usr/bin/env python3
 from typing import Any, Dict, List
 from .comparators.template import Resource, Comparator, ProcessingContext
+import logging
 
 def merge(a: Dict, b: Dict) -> Dict:
     r = dict(a)
     r.update(b)
     return r
+
+
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 
 class Converter:
@@ -59,38 +63,68 @@ class Converter:
                 j_out.append(Resource(j.id, "json", j.content[prop]))
         return s_out, j_out
 
+    
     def _run_level(self, ctx: ProcessingContext, env: str, prev_result: Dict) -> Dict:
+        """
+        Рекурсивная генерация схемы на уровне `env` с логированием.
+        """
         node = dict(prev_result)
+        logger.debug("Entering _run_level: env=%s, prev_result=%s", env, prev_result)
 
-        # применяем компараторы в порядке регистрации; компараторы читают и пишут в node (prev_result)
+        # --- Применяем компараторы ---
         for comp in self._comparators:
             if not comp.can_process(ctx, env, node):
+                logger.debug("Comparator %s cannot process env=%s", comp.__class__.__name__, env)
                 continue
+
+            logger.debug("Running comparator %s at env=%s", comp.__class__.__name__, env)
             g, alts = comp.process(ctx, env, node)
             if g:
+                logger.debug("Comparator %s returned global update: %s", comp.__class__.__name__, g)
                 node.update(g)
-            if alts:
-                branches = []
-                for alt in alts:
-                    sealed_ctx = ProcessingContext(ctx.schemas, ctx.jsons, sealed=True)
-                    # внутри ветви anyOf передаём текущее накопленное result (node) — оно служит базой
-                    child = self._run_level(sealed_ctx, env + "/anyOf", node)
-                    branches.append({**child, **alt})
-                return {"anyOf": branches}
 
-        # рекурсивно обходим properties — теперь имена берём и из схем, и из jsons
+            if alts:
+                logger.debug("Comparator %s returned alternatives: %s", comp.__class__.__name__, alts)
+                if "anyOf" in node:
+                    logger.debug("Merging alternatives into existing anyOf")
+                    node["anyOf"].extend(alts)
+                else:
+                    logger.debug("Creating new anyOf with alternatives")
+                    node["anyOf"] = alts
+
+        # --- Рекурсивно обходим properties ---
         prop_names = self._collect_prop_names(ctx.schemas, ctx.jsons)
         if prop_names:
             node.setdefault("properties", {})
             for name in prop_names:
                 s_cands, j_cands = self._gather_property_candidates(ctx.schemas, ctx.jsons, name)
-                sub_ctx = ProcessingContext(s_cands, j_cands, sealed=False)
-                # при спуске prev_result для дочернего уровня начинаем с пустого словаря
-                node["properties"][name] = self._run_level(sub_ctx, env + f"/properties/{name}", {})
+                sub_ctx = ProcessingContext(s_cands, j_cands, sealed=ctx.sealed)
 
-        # items/arrays/etc можно аналогично расширить при необходимости
+                logger.debug("Recursing into property '%s', schemas=%s, jsons=%s", 
+                            name, [s.id for s in s_cands], [j.id for j in j_cands])
+                child_node = self._run_level(sub_ctx, env + f"/properties/{name}", {})
 
+                # Определяем массив
+                is_array = any(isinstance(j.content.get(name) if isinstance(j.content, dict) else None, list)
+                            for j in ctx.jsons)
+                array_triggers = [j.id for j in ctx.jsons if isinstance(j.content, dict) and name in j.content]
+
+                if is_array:
+                    arr_node: Dict[str, Any] = {
+                        "type": "array",
+                        "j2sElementTrigger": array_triggers,
+                        "items": child_node
+                    }
+                    logger.debug("Property '%s' is array, node=%s", name, arr_node)
+                    node["properties"][name] = arr_node
+                else:
+                    node["properties"][name] = child_node
+                    logger.debug("Property '%s' node=%s", name, child_node)
+
+        logger.debug("Exiting _run_level: env=%s, node=%s", env, node)
         return node
+
+
 
     def run(self):
         root_ctx = ProcessingContext(self._schemas, self._jsons, sealed=False)

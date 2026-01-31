@@ -1,5 +1,5 @@
 import re
-from typing import Optional, Any, Dict
+from typing import Optional, Any, Dict, List
 from .template import Comparator, ProcessingContext, ComparatorResult
 
 class FormatDetector:
@@ -35,48 +35,68 @@ class FormatComparator(Comparator):
     name = "format"
 
     def can_process(self, ctx: ProcessingContext, env: str, prev_result: Dict) -> bool:
-        # Форматы допустимы ТОЛЬКО если тип уже зафиксирован как string
-        return prev_result.get("type") == "string"
+        # Форматы только если есть string (в том числе в anyOf/oneOf/allOf)
+        def has_string_type(node):
+            if isinstance(node, dict):
+                if node.get("type") == "string":
+                    return True
+                for key in ["anyOf", "oneOf", "allOf"]:
+                    if key in node and any(has_string_type(child) for child in node[key]):
+                        return True
+            return False
+        return has_string_type(prev_result)
 
-    def process(
-        self,
-        ctx: ProcessingContext,
-        env: str,
-        prev_result: Dict
-    ) -> ComparatorResult:
+    def process(self, ctx: ProcessingContext, env: str, prev_result: Dict):
+        # Рекурсивно обходим node, модифицируем все элементы type="string"
+        def apply_format(node: Dict) -> List[Dict]:
+            if "type" in node and node["type"] == "string":
+                base_triggers = set(node.get("j2sElementTrigger", []))
+                variants_map: Dict[Optional[str], set[int]] = {None: set(base_triggers)}
 
-        format_map: Dict[str, set[int]] = {}
+                # Форматы из схем
+                for s in ctx.schemas:
+                    if isinstance(s.content, dict) and s.content.get("type") == "string":
+                        fmt = s.content.get("format")
+                        variants_map.setdefault(fmt, set()).add(s.id)
+                        if fmt is not None:
+                            variants_map[None].discard(s.id)
 
-        # 1. Форматы, явно объявленные в схемах
-        for s in ctx.schemas:
-            if isinstance(s.content, dict) and "format" in s.content:
-                f = s.content["format"]
-                format_map.setdefault(f, set()).add(s.id)
+                # Форматы из JSON
+                for j in ctx.jsons:
+                    if isinstance(j.content, str):
+                        fmt = FormatDetector.detect(j.content, type_hint="string")
+                        variants_map.setdefault(fmt, set()).add(j.id)
+                        if fmt is not None:
+                            variants_map[None].discard(j.id)
 
-        # 2. Форматы, детектированные из JSON-значений
-        for j in ctx.jsons:
-            detected = FormatDetector.detect(j.content, type_hint="string")
-            if detected:
-                format_map.setdefault(detected, set()).add(j.id)
+                # Формируем список вариантов
+                variants = []
+                for fmt, ids in variants_map.items():
+                    if not ids:
+                        continue
+                    var = {"type": "string", "j2sElementTrigger": sorted(ids)}
+                    if fmt is not None:
+                        var["format"] = fmt
+                    variants.append(var)
 
-        if not format_map:
-            return None, None
+                # Только один вариант → возвращаем его напрямую
+                if len(variants) == 1:
+                    return [variants[0]]
+                return variants
 
-        variants = [
-            {
-                "format": fmt,
-                "j2sElementTrigger": sorted(ids),
-            }
-            for fmt, ids in format_map.items()
-        ]
+            # Рекурсивно обходим anyOf/oneOf/allOf
+            for key in ["anyOf", "oneOf", "allOf"]:
+                if key in node:
+                    new_list = []
+                    for child in node[key]:
+                        new_list.extend(apply_format(child))
+                    node[key] = new_list
+            return [node]
 
-        # sealed → формат должен быть один
-        if ctx.sealed:
-            return variants[0], None
 
-        if len(variants) == 1:
-            return variants[0], None
 
-        # Конфликт форматов → anyOf
-        return None, variants
-
+        updated_nodes = apply_format(dict(prev_result))
+        if len(updated_nodes) == 1:
+            return updated_nodes[0], None
+        else:
+            return None, updated_nodes
