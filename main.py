@@ -1,53 +1,35 @@
 from json2schema import Converter, PseudoArrayHandler
-from json2schema.comparators import FormatComparator, RequiredComparator, EmptyComparator, DeleteElement
+from json2schema.comparators import FormatComparator, RequiredComparator, EmptyComparator, DeleteElement, TypeComparator
 import time
-import json
 
 cur = time.time()
 
-conv = Converter(pseudo_handler=PseudoArrayHandler(), base_of="anyOf")
+# Инициализируем сам обработчик (он многоразовый)
+conv = Converter(
+    pseudo_handler=PseudoArrayHandler(), # Библиотека поддерживает генерацию псевдомассивных структур (можно определить свой обработчик)
+    base_of="anyOf",                     # Во что будут помещаться блоки при конфликтных значениях. anyOf/oneOf/allOf
+    core_comparator=TypeComparator()     # Атрибут type - единственный без которого pipeline не может построить схему, поэтому он выведен отдельно
+)
+
+# Добавлять можно как файл так и list/dict
 conv.add_json("ClassCatalog.tree.json")
+conv.add_json({
+    "name": "alice@example.com",
+    "email": "alice@example.com",
+    "identifier": "3f2504e0-4f89-11d3-9a0c-0305e82c3301",
+    "created": "2024-01-31"
+})
+# Схемы аналогично можно добавлять
+conv.add_schema({"type": "object", "properties": {"name": {"type": "object", "properties": {"name": {"type": "integer"}}}}})
 
+# Логика j2s - компараторы которые определяют все
 
-#conv.add_schema({"type": "object", "properties": {"name": {"type": "object", "properties": {"name": {"type": "integer"}}}}})
-#conv.add_json([{"name": "fdfddfm"}])
-#conv.add_json(["fdfddfm"])
-#conv.add_json({"name": "fdfddfm"})
-#conv.add_json([{"name": "https://dddd.ru"}])
-#conv.add_json([{"empty": {}}]) #
-#conv.add_json({"name": "https://dddd.ru"})
-#conv.add_json({
-#    "name": "alice@example.com",
-#    "email": "alice@example.com",
-#    "identifier": "3f2504e0-4f89-11d3-9a0c-0305e82c3301",
-#    "created": "2024-01-31"
-cur = time.time()
+conv.register(FormatComparator())   # поле format и определение форматов
+conv.register(RequiredComparator()) # поле required и определение обязательных значений
+conv.register(EmptyComparator())    # поля max/min Properties/Items и определение полностью пустых (т.е. пустые значения во всех вариантах данных)
+conv.register(DeleteElement())      # удаление атрибутов, в данном случае удаляется технический атрибут j2sElementTrigger (список источников от куда пришли данные)
+conv.register(DeleteElement("isPseudoArray")) # удаление технического атрибута isPseudoArray (появляется когда pseudo_handler настроен)
 
-
-#})
-#conv.add_json([
-#    #{},  # пустой объект → должен пометиться как empty
-#    {"0": {"name": "Alice", "dopvlojenost": {"f": True}}, "1": {"name": "Bob", "dopvlojenost": {"f": 1}}},  # псевдо-массив объектов
-#])
-#conv.add_json([
-#    {"0": 10, "1": 20, "2": 30},  # псевдо-массив примитивов (числа)
-#    #{"id": 1, "title": "Test"},  # обычный объект
-#    #["apple", "banana", "cherry"],  # массив строк
-#    #{"name": "Charlie", "age": 30},  # несовместимый объект с предыдущим
-#])
-#conv.register(TypeComparator())
-conv.register(FormatComparator())
-conv.register(RequiredComparator())
-conv.register(EmptyComparator())
-conv.register(DeleteElement())
-conv.register(DeleteElement("isPseudoArray"))
-
+# Запуск обработки
 result = conv.run()
-result_time = time.time()
-
-with open("ClassCatalog.tree.schema.json", "w", encoding="utf-8") as f:
-    json.dump(result, f, indent=2, ensure_ascii=False)
-
-from rich.pretty import pprint
-pprint(result)
-print(f"Затраченное время: {round(result_time-cur, 4)}")
+print(result)
