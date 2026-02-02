@@ -1,19 +1,22 @@
 import argparse
 import json
-import time
 import sys
+import time
+
 from rich.console import Console
+
 from . import Converter, PseudoArrayHandler
 from .comparators import (
+    DeleteElement,
+    EmptyComparator,
     FormatComparator,
     RequiredComparator,
-    EmptyComparator,
-    DeleteElement,
 )
 
 console = Console()
 
-def main():
+
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Generate JSON Schema from JSON input using json2schema.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -24,48 +27,33 @@ Examples:
   cat input.json | json2schema -
   json2schema --base-of anyOf < input.json
   json2schema dir/file1.json dir/file2.json -o schema.json
-        """
+        """,
     )
     parser.add_argument(
         "inputs",
         nargs="*",
         help="Paths to input JSON files. Use '-' for stdin. "
-             "If no arguments are provided, show this help message."
+        "If no arguments are provided, show this help message.",
     )
     parser.add_argument(
-        "-o", "--output",
-        help="Path to output JSON Schema file. If not specified, output to stdout."
+        "-o",
+        "--output",
+        help="Path to output JSON Schema file. If not specified, output to stdout.",
     )
     parser.add_argument(
         "--base-of",
         choices=["anyOf", "oneOf"],
         default="anyOf",
-        help="Combinator for differing types (default: anyOf)."
+        help="Combinator for differing types (default: anyOf).",
     )
     parser.add_argument(
-        "--no-pseudo-array",
-        action="store_true",
-        help="Disable pseudo-array handling."
+        "--no-pseudo-array", action="store_true", help="Disable pseudo-array handling."
     )
+    parser.add_argument("--no-format", action="store_true", help="Disable FormatComparator.")
+    parser.add_argument("--no-required", action="store_true", help="Disable RequiredComparator.")
+    parser.add_argument("--no-empty", action="store_true", help="Disable EmptyComparator.")
     parser.add_argument(
-        "--no-format",
-        action="store_true",
-        help="Disable FormatComparator."
-    )
-    parser.add_argument(
-        "--no-required",
-        action="store_true",
-        help="Disable RequiredComparator."
-    )
-    parser.add_argument(
-        "--no-empty",
-        action="store_true",
-        help="Disable EmptyComparator."
-    )
-    parser.add_argument(
-        "--no-delete-element",
-        action="store_true",
-        help="Disable DeleteElement comparators."
+        "--no-delete-element", action="store_true", help="Disable DeleteElement comparators."
     )
 
     # If no arguments, show help and exit
@@ -153,6 +141,7 @@ Examples:
     instances_word = "instance" if len(datas) == 1 else "instances"
     console.print(f"Generated from {len(datas)} JSON {instances_word}.")
     console.print(f"Elapsed time: {elapsed} sec.")
+
 
 if __name__ == "__main__":
     main()

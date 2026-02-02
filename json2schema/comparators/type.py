@@ -43,21 +43,34 @@ class TypeComparator(Comparator):
 
     def process(self, ctx: ProcessingContext, env: str, prev_result: dict) -> ComparatorResult:
         type_map: dict[str, set[str]] = {}
+
         for s in ctx.schemas:
             t = infer_schema_type(s.content)
             if t:
                 type_map.setdefault(t, set()).add(s.id)
+
         for j in ctx.jsons:
             t = infer_json_type(j.content)
             type_map.setdefault(t, set()).add(j.id)
+
+        # Нормализация: number поглощает integer
+        if "number" in type_map and "integer" in type_map:
+            type_map["number"].update(type_map["integer"])
+            del type_map["integer"]
+
         if not type_map:
             return None, None
+
         variants: list[dict[str, Any]] = [
-            {"type": t, "j2sElementTrigger": sorted(list(ids))} for t, ids in type_map.items()
+            {"type": t, "j2sElementTrigger": sorted(ids)}
+            for t, ids in type_map.items()
         ]
+
         if ctx.sealed:
             # cannot create Of inside sealed context — choose first deterministic
             return variants[0], None
+
         if len(variants) == 1:
             return variants[0], None
+
         return None, variants

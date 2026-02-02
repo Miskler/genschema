@@ -179,7 +179,7 @@ class Converter:
                 is_pseudo_array, pattern = self._pseudo_handler.is_pseudo_array(props, ctx)
                 node["isPseudoArray"] = is_pseudo_array
             else:
-                #node["isPseudoArray"] = False
+                # node["isPseudoArray"] = False
                 is_pseudo_array = False
 
         # Вызов остальных компараторов
