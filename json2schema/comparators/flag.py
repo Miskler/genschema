@@ -1,6 +1,4 @@
-from typing import Dict, List, Optional, Tuple
-
-from .template import Comparator, ProcessingContext
+from .template import Comparator, ComparatorResult, ProcessingContext
 
 
 class FlagMaker(Comparator):
@@ -8,11 +6,9 @@ class FlagMaker(Comparator):
 
     name = "flag"
 
-    def can_process(self, ctx: ProcessingContext, env: str, node: Dict) -> bool:
+    def can_process(self, ctx: ProcessingContext, env: str, node: dict) -> bool:
         # Обрабатываем объекты и массивы
         return True
 
-    def process(
-        self, ctx: ProcessingContext, env: str, node: Dict
-    ) -> Tuple[Optional[Dict], Optional[List[Dict]]]:
+    def process(self, ctx: ProcessingContext, env: str, node: dict) -> ComparatorResult:
         return {"Flag": True}, None

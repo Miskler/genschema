@@ -1,18 +1,18 @@
-from typing import List, Optional
+from typing import Optional
 
 from .comparators.template import ProcessingContext
 
 
 class PseudoArrayHandlerBase:
     def is_pseudo_array(
-        self, keys: List[str], ctx: ProcessingContext
+        self, keys: list[str], ctx: ProcessingContext
     ) -> tuple[bool, Optional[str]]:
         return False, None
 
 
 class PseudoArrayHandler(PseudoArrayHandlerBase):
     def is_pseudo_array(
-        self, keys: List[str], ctx: ProcessingContext
+        self, keys: list[str], ctx: ProcessingContext
     ) -> tuple[bool, Optional[str]]:
         if not keys:
             return False, None

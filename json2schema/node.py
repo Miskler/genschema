@@ -1,5 +1,5 @@
 from enum import Enum, auto
-from typing import Any, Dict
+from typing import Any
 
 
 class NodeKind(Enum):
@@ -12,7 +12,7 @@ class NodeKind(Enum):
 class SchemaNode:
     def __init__(self, kind: NodeKind):
         self.kind = kind
-        self.schema: Dict[str, Any] = {}
+        self.schema: dict[str, Any] = {}
 
-    def as_dict(self) -> Dict[str, Any]:
+    def as_dict(self) -> dict[str, Any]:
         return self.schema

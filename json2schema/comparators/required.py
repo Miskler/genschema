@@ -1,6 +1,6 @@
 import logging
 
-from .template import Comparator, ProcessingContext
+from .template import Comparator, ComparatorResult, ProcessingContext
 
 logger = logging.getLogger(__name__)
 
@@ -19,9 +19,9 @@ class RequiredComparator(Comparator):
             or not ctx.jsons
         )
 
-    def process(self, ctx: ProcessingContext, env: str, node: dict):
+    def process(self, ctx: ProcessingContext, env: str, node: dict) -> ComparatorResult:
         # собираем все ключи в JSON на этом уровне
-        keys = set()
+        keys: set[str] = set()
         for j in ctx.jsons:
             if isinstance(j.content, dict):
                 keys.update(j.content.keys())

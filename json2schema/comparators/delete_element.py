@@ -1,6 +1,4 @@
-from typing import Dict, List, Optional, Tuple
-
-from .template import Comparator, ProcessingContext, ToDelete
+from .template import Comparator, ComparatorResult, ProcessingContext, ToDelete
 
 
 class DeleteElement(Comparator):
@@ -13,11 +11,9 @@ class DeleteElement(Comparator):
         super().__init__()
         self.attribute = attribute
 
-    def can_process(self, ctx: ProcessingContext, env: str, node: Dict) -> bool:
+    def can_process(self, ctx: ProcessingContext, env: str, node: dict) -> bool:
         # Обрабатываем объекты и массивы
         return self.attribute in node
 
-    def process(
-        self, ctx: ProcessingContext, env: str, node: Dict
-    ) -> Tuple[Optional[Dict], Optional[List[Dict]]]:
-        return {self.attribute: ToDelete(node.get(self.attribute, -1), self.name)}, None
+    def process(self, ctx: ProcessingContext, env: str, node: dict) -> ComparatorResult:
+        return {self.attribute: ToDelete(node.get(self.attribute, -1), self)}, None

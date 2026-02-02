@@ -1,7 +1,9 @@
-from .template import Comparator, ProcessingContext
+from typing import Any
+
+from .template import Comparator, ComparatorResult, ProcessingContext
 
 
-def infer_json_type(v):
+def infer_json_type(v: Any) -> str:
     if v is None:
         return "null"
     if isinstance(v, bool):
@@ -19,7 +21,7 @@ def infer_json_type(v):
     return "any"
 
 
-def infer_schema_type(s):
+def infer_schema_type(s) -> None | str:
     if not isinstance(s, dict):
         return None
     if "type" in s:
@@ -36,10 +38,10 @@ def infer_schema_type(s):
 class TypeComparator(Comparator):
     name = "type"
 
-    def can_process(self, ctx: ProcessingContext, env: str, prev_result: dict):
+    def can_process(self, ctx: ProcessingContext, env: str, prev_result: dict) -> bool:
         return "type" not in prev_result and bool(ctx.schemas or ctx.jsons)
 
-    def process(self, ctx: ProcessingContext, env: str, prev_result: dict):
+    def process(self, ctx: ProcessingContext, env: str, prev_result: dict) -> ComparatorResult:
         type_map = {}
         for s in ctx.schemas:
             t = infer_schema_type(s.content)

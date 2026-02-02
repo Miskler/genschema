@@ -1,9 +1,9 @@
 import re
 from collections import defaultdict
 from functools import lru_cache
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
-from .template import Comparator, ProcessingContext
+from .template import Comparator, ComparatorResult, ProcessingContext
 
 
 class FormatDetector:
@@ -40,19 +40,17 @@ class FormatDetector:
 class FormatComparator(Comparator):
     name = "format"
 
-    def can_process(self, ctx: ProcessingContext, env: str, prev_result: Dict) -> bool:
+    def can_process(self, ctx: ProcessingContext, env: str, prev_result: dict) -> bool:
         # Обрабатываем только если на текущем уровне уже есть type: "string"
         return prev_result.get("type") == "string"
 
-    def process(
-        self, ctx: ProcessingContext, env: str, prev_result: Dict
-    ) -> tuple[Optional[Dict], Optional[List[Dict]]]:
+    def process(self, ctx: ProcessingContext, env: str, prev_result: dict) -> ComparatorResult:
 
         # Базовые триггеры из предыдущих компараторов (обычно из TypeComparator)
         base_triggers = set(prev_result.get("j2sElementTrigger", []))
 
         # Собираем все возможные форматы и их источники
-        format_to_ids = defaultdict(set)
+        format_to_ids: dict[str, set[str]] = defaultdict(set)
         format_to_ids[None].update(base_triggers)
 
         # 1. Форматы, явно указанные в схемах
@@ -72,7 +70,7 @@ class FormatComparator(Comparator):
                     format_to_ids[None].discard(j.id)
 
         # Формируем варианты
-        variants: List[Dict] = []
+        variants: list[dict] = []
         for fmt, ids in format_to_ids.items():
             if not ids:
                 continue

@@ -1,6 +1,4 @@
-from typing import Dict, List, Optional, Tuple
-
-from .template import Comparator, ProcessingContext, Resource
+from .template import Comparator, ComparatorResult, ProcessingContext, Resource
 
 
 class EmptyComparator(Comparator):
@@ -16,13 +14,11 @@ class EmptyComparator(Comparator):
         self.flag_empty = flag_empty
         self.flag_non_empty = flag_non_empty
 
-    def can_process(self, ctx: ProcessingContext, env: str, node: Dict) -> bool:
+    def can_process(self, ctx: ProcessingContext, env: str, node: dict) -> bool:
         t = node.get("type")
         return t == "object" or t == "array"
 
-    def process(
-        self, ctx: ProcessingContext, env: str, node: Dict
-    ) -> Tuple[Optional[Dict], Optional[List[Dict]]]:
+    def process(self, ctx: ProcessingContext, env: str, node: dict) -> ComparatorResult:
 
         # Проверяем есть ли непустые кандидаты на этом уровне
         def is_nonempty(r: Resource):

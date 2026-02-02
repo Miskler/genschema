@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import Dict, List, Literal, Optional
+from typing import Literal, Optional
 
 from .comparators import TypeComparator
 from .comparators.template import Comparator, ProcessingContext, Resource, ToDelete
@@ -33,15 +33,15 @@ class Converter:
         так как type - единственное поле без которого Converter не может построить структуру.
         :type core_comparator: TypeComparator
         """
-        self._schemas: List[Resource] = []
-        self._jsons: List[Resource] = []
-        self._comparators: List[Comparator] = []
+        self._schemas: list[Resource] = []
+        self._jsons: list[Resource] = []
+        self._comparators: list[Comparator] = []
         self._core_comparator = core_comparator or TypeComparator()
         self._id = 0
         self._pseudo_handler = pseudo_handler
         self._base_of = base_of
 
-    def add_schema(self, s: dict | str):
+    def add_schema(self, s: dict | str) -> None:
         if isinstance(s, str):
             with open(s, "r") as f:
                 s = json.loads(f.read())
@@ -49,7 +49,7 @@ class Converter:
         self._schemas.append(Resource(str(self._id), "schema", s))
         self._id += 1
 
-    def add_json(self, j: dict | list | str):
+    def add_json(self, j: dict | list | str) -> None:
         if isinstance(j, str):
             with open(j, "r") as f:
                 j = json.loads(f.read())
@@ -57,7 +57,7 @@ class Converter:
         self._jsons.append(Resource(str(self._id), "json", j))
         self._id += 1
 
-    def register(self, c: Comparator):
+    def register(self, c: Comparator) -> None:
         if isinstance(c, TypeComparator):
             raise UserWarning(
                 "A TypeComparator-like comparator must be provided during initialization "
@@ -67,7 +67,7 @@ class Converter:
 
     # ---------------- utils ----------------
 
-    def _collect_prop_names(self, schemas, jsons):
+    def _collect_prop_names(self, schemas, jsons) -> list[str]:
         names = set()
         for s in schemas:
             c = s.content
@@ -78,7 +78,9 @@ class Converter:
                 names.update(j.content.keys())
         return sorted(names)
 
-    def _gather_property_candidates(self, schemas, jsons, prop):
+    def _gather_property_candidates(
+        self, schemas, jsons, prop
+    ) -> tuple[list[Resource], list[Resource]]:
         s_out, j_out = [], []
 
         for s in schemas:
@@ -150,7 +152,7 @@ class Converter:
 
     # ---------------- core ----------------
 
-    def _run_level(self, ctx: ProcessingContext, env: str, prev: Dict) -> Dict:
+    def _run_level(self, ctx: ProcessingContext, env: str, prev: dict) -> dict:
         logger.debug("Entering _run_level: env=%s, prev_result=%s", env, prev)
         node = dict(prev)
 
@@ -207,7 +209,7 @@ class Converter:
         # recursion based on type
         if node.get("type") == "object":
             if is_pseudo_array:
-                node = self._run_pseudo_array(ctx, env, node, pattern)
+                node = self._run_pseudo_array(ctx, env, node, str(pattern))
             else:
                 node = self._run_object(ctx, env, node)
         elif node.get("type") == "array":
@@ -218,7 +220,7 @@ class Converter:
 
     # ---------------- object ----------------
 
-    def _run_object(self, ctx: ProcessingContext, env: str, node: Dict) -> Dict:
+    def _run_object(self, ctx: ProcessingContext, env: str, node: dict) -> dict:
         node = dict(node)
         node.setdefault("properties", {})
 
@@ -237,7 +239,7 @@ class Converter:
 
     # ---------------- pseudo array ----------------
 
-    def _run_pseudo_array(self, ctx: ProcessingContext, env: str, node: Dict, pattern: str) -> Dict:
+    def _run_pseudo_array(self, ctx: ProcessingContext, env: str, node: dict, pattern: str) -> dict:
         node = dict(node)
         node.setdefault("patternProperties", {})
         _, items_ctx = self._split_array_ctx(ctx)
@@ -250,7 +252,7 @@ class Converter:
 
     # ---------------- array ----------------
 
-    def _run_array(self, ctx: ProcessingContext, env: str, node: Dict) -> Dict:
+    def _run_array(self, ctx: ProcessingContext, env: str, node: dict) -> dict:
         node = dict(node)
         node.setdefault("items", {})
 
