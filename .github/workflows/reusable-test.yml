@@ -42,7 +42,7 @@ jobs:
       - name: Run tests
         run: |
           pytest \
-            --cov=json2schema \
+            --cov=json2schema2schema \
             --cov-report=xml \
             --cov-report=html \
             --cov-report=term \

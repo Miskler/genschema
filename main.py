@@ -1,5 +1,5 @@
-from json2schema import Converter, PseudoArrayHandler
-from json2schema.comparators import FormatComparator, RequiredComparator, EmptyComparator, DeleteElement, TypeComparator
+from json2schema2schema import Converter, PseudoArrayHandler
+from json2schema2schema.comparators import FormatComparator, RequiredComparator, EmptyComparator, DeleteElement, TypeComparator
 import time
 
 cur = time.time()

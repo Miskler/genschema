@@ -27,22 +27,22 @@ install-dev:
 	pip install -e .[dev]
 
 test:
-	pytest --cov=json2schema --cov-report=xml --cov-report=html --cov-report=term-missing
+	pytest --cov=json2schema2schema --cov-report=xml --cov-report=html --cov-report=term-missing
 
 test-quick:
 	pytest --tb=short
 
 lint:
-	flake8 json2schema/ tests/
-	black --check json2schema/ tests/
-	isort --check-only json2schema/ tests/
+	flake8 json2schema2schema/ tests/
+	black --check json2schema2schema/ tests/
+	isort --check-only json2schema2schema/ tests/
 
 format:
-	black json2schema/ tests/
-	isort json2schema/ tests/
+	black json2schema2schema/ tests/
+	isort json2schema2schema/ tests/
 
 type-check:
-	mypy json2schema/
+	mypy json2schema2schema/
 
 clean:
 	rm -rf build/ dist/ *.egg-info/

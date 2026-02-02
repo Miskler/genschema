@@ -1,7 +1,7 @@
 import unittest
 
-from json2schema.comparators.required import RequiredComparator
-from json2schema.comparators.template import ProcessingContext, Resource
+from json2schema2schema.comparators.required import RequiredComparator
+from json2schema2schema.comparators.template import ProcessingContext, Resource
 
 
 class TestRequiredComparator(unittest.TestCase):

@@ -2,8 +2,8 @@ import time
 from statistics import mean
 
 # ===== json2schema (твоя библиотека) =====
-from json2schema.core.pipeline import Converter
-from json2schema.core.comparators import (
+from json2schema2schema.pipeline import Converter
+from json2schema2schema.comparators import (
     FormatComparator,
     RequiredComparator,
     EmptyComparator,
@@ -18,7 +18,7 @@ from genson import SchemaBuilder
 SCHEMA = {}
 
 import json
-with open("ClassCatalog.tree.json", "r") as f:
+with open("tests/datasets/all_doctors_data.json", "r") as f:
     jsn = json.loads(f.read())
 
 JSONS = [
