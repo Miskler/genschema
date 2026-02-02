@@ -67,7 +67,7 @@ class Converter:
 
     # ---------------- utils ----------------
 
-    def _collect_prop_names(self, schemas, jsons) -> list[str]:
+    def _collect_prop_names(self, schemas: list[Resource], jsons: list[Resource]) -> list[str]:
         names = set()
         for s in schemas:
             c = s.content
@@ -79,7 +79,7 @@ class Converter:
         return sorted(names)
 
     def _gather_property_candidates(
-        self, schemas, jsons, prop
+        self, schemas: list[Resource], jsons: list[Resource], prop: str
     ) -> tuple[list[Resource], list[Resource]]:
         s_out, j_out = [], []
 
@@ -94,7 +94,9 @@ class Converter:
 
         return s_out, j_out
 
-    def _split_array_ctx(self, ctx: ProcessingContext):
+    def _split_array_ctx(
+        self, ctx: ProcessingContext
+    ) -> tuple[ProcessingContext, ProcessingContext]:
         obj_jsons = []
         item_jsons = []
 
@@ -156,7 +158,7 @@ class Converter:
         logger.debug("Entering _run_level: env=%s, prev_result=%s", env, prev)
         node = dict(prev)
 
-        def use_comp(comp) -> bool:
+        def use_comp(comp: Comparator) -> bool:
             if not comp.can_process(ctx, env, node):
                 return False
 

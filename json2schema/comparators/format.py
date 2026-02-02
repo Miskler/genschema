@@ -50,7 +50,7 @@ class FormatComparator(Comparator):
         base_triggers = set(prev_result.get("j2sElementTrigger", []))
 
         # Собираем все возможные форматы и их источники
-        format_to_ids: dict[str, set[str]] = defaultdict(set)
+        format_to_ids: dict[str | None, set[str]] = defaultdict(set)
         format_to_ids[None].update(base_triggers)
 
         # 1. Форматы, явно указанные в схемах

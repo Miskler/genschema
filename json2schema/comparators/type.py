@@ -21,7 +21,7 @@ def infer_json_type(v: Any) -> str:
     return "any"
 
 
-def infer_schema_type(s) -> None | str:
+def infer_schema_type(s: dict | str) -> None | str:
     if not isinstance(s, dict):
         return None
     if "type" in s:
@@ -42,7 +42,7 @@ class TypeComparator(Comparator):
         return "type" not in prev_result and bool(ctx.schemas or ctx.jsons)
 
     def process(self, ctx: ProcessingContext, env: str, prev_result: dict) -> ComparatorResult:
-        type_map = {}
+        type_map: dict[str, set[str]] = {}
         for s in ctx.schemas:
             t = infer_schema_type(s.content)
             if t:
@@ -52,7 +52,7 @@ class TypeComparator(Comparator):
             type_map.setdefault(t, set()).add(j.id)
         if not type_map:
             return None, None
-        variants = [
+        variants: list[dict[str, Any]] = [
             {"type": t, "j2sElementTrigger": sorted(list(ids))} for t, ids in type_map.items()
         ]
         if ctx.sealed:

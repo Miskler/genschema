@@ -21,7 +21,7 @@ class EmptyComparator(Comparator):
     def process(self, ctx: ProcessingContext, env: str, node: dict) -> ComparatorResult:
 
         # Проверяем есть ли непустые кандидаты на этом уровне
-        def is_nonempty(r: Resource):
+        def is_nonempty(r: Resource) -> bool:
             c = r.content
             if isinstance(c, dict):
                 return bool(c)  # не пустой словарь
