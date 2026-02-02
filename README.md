@@ -1,20 +1,20 @@
 <div align="center">
 
-# 🔍 json2schema
+# 🔍 json2schema2schema
 
 <img src="https://via.placeholder.com/800x200.png?text=json2schema+Logo" width="70%" alt="json2schema logo" />
 
 *A powerful, intelligent library for generating JSON Schema from multiple JSON instances with **smart merging**, **advanced inference**, and **modular refinements**.*
 
-[![Tests](https://miskler.github.io/json2schema/tests-badge.svg)](https://miskler.github.io/json2schema/tests/tests-report.html)
-[![Coverage](https://miskler.github.io/json2schema/coverage.svg)](https://miskler.github.io/json2schema/coverage/)
+[![Tests](https://miskler.github.io/json2schema2schema/tests-badge.svg)](https://miskler.github.io/json2schema2schema/tests/tests-report.html)
+[![Coverage](https://miskler.github.io/json2schema2schema/coverage.svg)](https://miskler.github.io/json2schema2schema/coverage/)
 [![Python](https://img.shields.io/badge/python-3.10+-blue)](https://python.org)
-[![PyPI - Package Version](https://img.shields.io/pypi/v/json2schema?color=blue)](https://pypi.org/project/json2schema/)
-[![License](https://img.shields.io/github/license/Miskler/json2schema.svg)](https://github.com/Miskler/json2schema?tab=AGPL-3.0-1-ov-file)
+[![PyPI - Package Version](https://img.shields.io/pypi/v/json2schema2schema?color=blue)](https://pypi.org/project/json2schema2schema/)
+[![License](https://img.shields.io/github/license/Miskler/json2schema2schema.svg)](https://github.com/Miskler/json2schema2schema?tab=AGPL-3.0-1-ov-file)
 [![BlackCode](https://img.shields.io/badge/code%20style-black-black)](https://github.com/psf/black)
 [![mypy](https://img.shields.io/badge/type--checked-mypy-blue?logo=python)](https://mypy.readthedocs.io/en/stable/index.html)
 
-**[⭐ Star us on GitHub](https://github.com/Miskler/json2schema)** | **[📚 Read the Docs](https://miskler.github.io/json2schema/)** | **[🐛 Report Bug](https://github.com/Miskler/json2schema/issues)**
+**[⭐ Star us on GitHub](https://github.com/Miskler/json2schema2schema)** | **[📚 Read the Docs](https://miskler.github.io/json2schema2schema/)** | **[🐛 Report Bug](https://github.com/Miskler/json2schema2schema/issues)**
 </div>
 
 <div align="center">
@@ -41,14 +41,14 @@
 ### Installation
 
 ```bash
-pip install json2schema
+pip install json2schema2schema
 ```
 
 ### 30-Second Python Example
 
 ```python
-from json2schema import Converter, PseudoArrayHandler
-from json2schema.comparators import (
+from json2schema2schema import Converter, PseudoArrayHandler
+from json2schema2schema.comparators import (
     FormatComparator,
     RequiredComparator,
     EmptyComparator,
@@ -82,16 +82,16 @@ print(result)  # Pretty-printed JSON Schema
 
 ```bash
 # Basic: single or multiple files
-json2schema input1.json input2.json -o schema.json
+json2schema2schema input1.json input2.json -o schema.json
 
 # Use oneOf instead of anyOf
-json2schema *.json --base-of oneOf -o schema.json
+json2schema2schema *.json --base-of oneOf -o schema.json
 
 # Disable refinements
-json2schema data.json --no-format --no-required --no-pseudo-array
+json2schema2schema data.json --no-format --no-required --no-pseudo-array
 
 # Read from stdin
-cat data.json | json2schema - -o schema.json
+cat data.json | json2schema2schema - -o schema.json
 ```
 
 <div align="center">
@@ -100,7 +100,7 @@ cat data.json | json2schema - -o schema.json
 
 </div>
 
-| Feature                     | json2schema                                              | GenSON                                                   |
+| Feature                     | json2schema2schema                                              | GenSON                                                   |
 |-----------------------------|----------------------------------------------------------|----------------------------------------------------------|
 | Multiple Instance Merging   | Yes                                                      | Yes                                                      |
 | Variant Type Handling       | Configurable `anyOf` or `oneOf`                           | `anyOf` only                                             |
@@ -157,8 +157,8 @@ Modular pipeline design for clean, extensible code:
 ### Setup
 
 ```bash
-git clone https://github.com/Miskler/json2schema.git
-cd json2schema
+git clone https://github.com/Miskler/json2schema2schema.git
+cd json2schema2schema
 python -m venv .venv
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -e ".[dev]"    # or make install-dev if Makefile exists
@@ -180,10 +180,10 @@ make docs          # Build documentation
 
 </div>
 
-- **[📖 Full Documentation](https://miskler.github.io/json2schema/)**
-- **[🚀 Quick Start Guide](https://miskler.github.io/json2schema/basic/quick_start/)**
-- **[🔧 API Reference](https://miskler.github.io/json2schema/reference/api/)**
-- **[🆚 Comparison Details](https://miskler.github.io/json2schema/advanced/comparison/)**
+- **[📖 Full Documentation](https://miskler.github.io/json2schema2schema/)**
+- **[🚀 Quick Start Guide](https://miskler.github.io/json2schema2schema/basic/quick_start/)**
+- **[🔧 API Reference](https://miskler.github.io/json2schema2schema/reference/api/)**
+- **[🆚 Comparison Details](https://miskler.github.io/json2schema2schema/advanced/comparison/)**
 
 <div align="center">
 

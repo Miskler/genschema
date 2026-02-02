@@ -13,7 +13,7 @@ sys.path.insert(0, str(ROOT))                       # import project without ins
 # ──────────────────────────────────────────────────────────────────────────────
 # Project meta
 # ──────────────────────────────────────────────────────────────────────────────
-project   = "json2schema"
+project   = "json2schema2schema"
 author    = "Miskler"
 copyright = "2026, Miskler"
 from jsonschema_diff import __version__
@@ -43,7 +43,7 @@ html_theme_options = {
     "dark_logo": "logo_night.png",
     "sidebar_hide_name": True,
 
-    "source_repository": "https://github.com/Miskler/json2schema",
+    "source_repository": "https://github.com/Miskler/json2schema2schema",
     "source_branch": "main",
     "source_directory": "docs/",
 }
@@ -68,7 +68,7 @@ typehints_fqcn    = False            # короткие имена в хинта
 # AutoAPI – строим flat API Reference
 # ──────────────────────────────────────────────────────────────────────────────
 autoapi_type              = "python"
-autoapi_dirs              = [str(ROOT / "json2schema")]
+autoapi_dirs              = [str(ROOT / "json2schema2schema")]
 autoapi_root              = "reference/api"
 autoapi_add_toctree_entry = True
 autoapi_python_use_implicit_namespaces = True

@@ -9,8 +9,8 @@ Basic usage example:
 
 .. code-block:: python
 
-    from json2schema import Converter, PseudoArrayHandler
-    from json2schema.comparators import (
+    from json2schema2schema import Converter, PseudoArrayHandler
+    from json2schema2schema.comparators import (
         FormatComparator,
         RequiredComparator,
         EmptyComparator,
@@ -77,5 +77,5 @@ Basic usage example:
 See also
 --------
 
-- :mod:`json2schema.pipeline` — detailed documentation of the internal pipeline and comparator system
-- :class:`json2schema.pseudo_arrays` — pseudo-array detection and normalization logic
+- :mod:`json2schema2schema.pipeline` — detailed documentation of the internal pipeline and comparator system
+- :class:`json2schema2schema.pseudo_arrays` — pseudo-array detection and normalization logic

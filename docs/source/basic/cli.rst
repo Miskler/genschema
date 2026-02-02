@@ -18,21 +18,12 @@ Features
 - Output to file or stdout
 - Rich console output with error reporting and timing
 
-Installation
-------------
-
-.. code-block:: bash
-
-   pip install json2schema
-
-(adjust according to your actual package name / distribution method)
-
 Usage
 -----
 
 .. code-block:: text
 
-   json2schema [OPTIONS] [INPUTS]...
+   json2schema2schema [OPTIONS] [INPUTS]...
 
 Arguments
 ~~~~~~~~~
@@ -76,41 +67,41 @@ Read single file and write schema to disk
 
 .. code-block:: bash
 
-   json2schema data.json -o schema.json
+   json2schema2schema data.json -o schema.json
 
 Multiple files → anyOf combination
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: bash
 
-   json2schema user1.json user2.json user3.json --base-of anyOf -o schema.json
+   json2schema2schema user1.json user2.json user3.json --base-of anyOf -o schema.json
 
 Read from stdin
 ~~~~~~~~~~~~~~~
 
 .. code-block:: bash
 
-   cat record.json | json2schema -
+   cat record.json | json2schema2schema -
 
    # or with redirection
-   json2schema - < record.json
+   json2schema2schema - < record.json
 
    # piping from another command
-   curl https://api.example.com/data | json2schema -o api-schema.json
+   curl https://api.example.com/data | json2schema2schema -o api-schema.json
 
 Use oneOf instead of anyOf
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: bash
 
-   json2schema event-log-*.json --base-of oneOf -o events.schema.json
+   json2schema2schema event-log-*.json --base-of oneOf -o events.schema.json
 
 Disable most refinements (minimal schema)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: bash
 
-   json2schema messy-data.json --no-format --no-required --no-empty --no-pseudo-array -o minimal.json
+   json2schema2schema messy-data.json --no-format --no-required --no-empty --no-pseudo-array -o minimal.json
 
 Exit Codes
 ----------
@@ -141,4 +132,4 @@ The tool is built around a modular ``Converter`` class that:
 
 Comparators can be selectively disabled via CLI flags.
 
-See also for more: :mod:`json2schema.cli`
+See also for more: :mod:`json2schema2schema.cli`

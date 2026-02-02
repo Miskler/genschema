@@ -1,4 +1,4 @@
-Welcome to json2schema documentation!
+Welcome to json2schema2schema documentation!
 ============================================
 
 .. toctree::
