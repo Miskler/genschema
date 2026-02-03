@@ -22,6 +22,11 @@ class RequiredComparator(Comparator):
     def process(self, ctx: ProcessingContext, env: str, node: dict) -> ComparatorResult:
         required_sets: list[set[str]] = []
 
+        # Если есть хотя бы один JSON, который не является объектом,
+        # мы не можем корректно определить обязательные ключи.
+        if ctx.jsons and any(not isinstance(j.content, dict) for j in ctx.jsons):
+            return None, None
+
         # ---------- из json ----------
         objects = [j.content for j in ctx.jsons if isinstance(j.content, dict)]
         if objects:
@@ -37,7 +42,10 @@ class RequiredComparator(Comparator):
 
         # ---------- из схем ----------
         for schema in ctx.schemas:
-            req = schema.get("required")
+            content = schema.content
+            if not isinstance(content, dict):
+                continue
+            req = content.get("required")
             if isinstance(req, list):
                 required_sets.append(set(req))
 

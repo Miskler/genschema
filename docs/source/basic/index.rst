@@ -14,3 +14,4 @@ Next steps depend on how you plan to use the library:
 
    cli
    python
+   comparators

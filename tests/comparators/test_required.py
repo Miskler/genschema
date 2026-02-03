@@ -106,10 +106,10 @@ class TestRequiredComparator(unittest.TestCase):
         self.assertEqual(general, {"required": ["a"]})
         self.assertIsNone(alts)
 
-    def test_process_schemas_ignored(self):
-        s1 = Resource("s1", "schema", {"properties": {"a": {}}})  # schemas not used
-        j1 = Resource("j1", "json", {"b": 1})
+    def test_process_schemas_required_narrows(self):
+        s1 = Resource("s1", "schema", {"required": ["a"]})
+        j1 = Resource("j1", "json", {"a": 1, "b": 2})
         ctx = ProcessingContext([s1], [j1], False)
         general, alts = self.comparator.process(ctx, "", {})
-        self.assertEqual(general, {"required": ["b"]})
+        self.assertEqual(general, {"required": ["a"]})
         self.assertIsNone(alts)
