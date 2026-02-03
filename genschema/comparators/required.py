@@ -34,10 +34,7 @@ class RequiredComparator(Comparator):
             for obj in objects:
                 keys.update(obj.keys())
 
-            required_from_json = {
-                k for k in keys
-                if all(k in obj for obj in objects)
-            }
+            required_from_json = {k for k in keys if all(k in obj for obj in objects)}
             required_sets.append(required_from_json)
 
         # ---------- из схем ----------
