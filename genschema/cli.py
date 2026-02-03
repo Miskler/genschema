@@ -11,6 +11,7 @@ from .comparators import (
     EmptyComparator,
     FormatComparator,
     RequiredComparator,
+    SchemaVersionComparator,
 )
 
 console = Console()
@@ -52,6 +53,11 @@ Examples:
     parser.add_argument("--no-format", action="store_true", help="Disable FormatComparator.")
     parser.add_argument("--no-required", action="store_true", help="Disable RequiredComparator.")
     parser.add_argument("--no-empty", action="store_true", help="Disable EmptyComparator.")
+    parser.add_argument(
+        "--no-schema-version",
+        action="store_true",
+        help="Disable SchemaVersionComparator.",
+    )
     parser.add_argument(
         "--no-delete-element", action="store_true", help="Disable DeleteElement comparators."
     )
@@ -108,6 +114,8 @@ Examples:
     # Register comparators conditionally
     if not args.no_format:
         conv.register(FormatComparator())
+    if not args.no_schema_version:
+        conv.register(SchemaVersionComparator())
     if not args.no_required:
         conv.register(RequiredComparator())
     if not args.no_empty:

@@ -57,6 +57,11 @@ class Converter:
         self._jsons.append(Resource(str(self._id), "json", j))
         self._id += 1
 
+    def clear_data(self) -> None:
+        self._id = 0
+        self._jsons = []
+        self._schemas = []
+
     def register(self, c: Comparator) -> None:
         if isinstance(c, TypeComparator):
             raise UserWarning(

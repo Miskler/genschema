@@ -4,6 +4,7 @@ from .flag import FlagMaker
 from .format import FormatComparator
 from .no_additional_prop import NoAdditionalProperties
 from .required import RequiredComparator
+from .schema_version import SchemaVersionComparator
 from .type import TypeComparator
 
 __all__ = [
@@ -14,4 +15,5 @@ __all__ = [
     "EmptyComparator",
     "NoAdditionalProperties",
     "DeleteElement",
+    "SchemaVersionComparator",
 ]

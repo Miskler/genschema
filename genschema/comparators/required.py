@@ -20,18 +20,32 @@ class RequiredComparator(Comparator):
         )
 
     def process(self, ctx: ProcessingContext, env: str, node: dict) -> ComparatorResult:
-        # собираем все ключи в JSON на этом уровне
-        keys: set[str] = set()
-        for j in ctx.jsons:
-            if isinstance(j.content, dict):
-                keys.update(j.content.keys())
+        required_sets: list[set[str]] = []
 
-        # определяем обязательные: ключи, которые есть во всех JSON
-        required = [
-            k
-            for k in sorted(keys)
-            if all(isinstance(j.content, dict) and k in j.content for j in ctx.jsons)
-        ]
+        # ---------- из json ----------
+        objects = [j.content for j in ctx.jsons if isinstance(j.content, dict)]
+        if objects:
+            keys: set[str] = set()
+            for obj in objects:
+                keys.update(obj.keys())
+
+            required_from_json = {
+                k for k in keys
+                if all(k in obj for obj in objects)
+            }
+            required_sets.append(required_from_json)
+
+        # ---------- из схем ----------
+        for schema in ctx.schemas:
+            req = schema.get("required")
+            if isinstance(req, list):
+                required_sets.append(set(req))
+
+        if not required_sets:
+            return None, None
+
+        # ---------- минимальное пересечение ----------
+        required = sorted(set.intersection(*required_sets))
 
         if required:
             return {"required": required}, None
