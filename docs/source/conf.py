@@ -40,8 +40,8 @@ autodoc_typehints = "description"  # или "signature" / "both" / "none"
 html_theme       = "furo"
 html_static_path = ["_static"]
 html_theme_options = {
-    "light_logo": "logo_day.png",
-    "dark_logo": "logo_night.png",
+    "light_logo": "logo_day.webp",
+    "dark_logo": "logo_night.webp",
     "sidebar_hide_name": True,
 
     "source_repository": "https://github.com/Miskler/genschema",

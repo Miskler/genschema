@@ -2,7 +2,7 @@
 
 # 🔍 genschema
 
-<img src="https://via.placeholder.com/800x200.png?text=genschema+Logo" width="70%" alt="genschema logo" />
+<img src="https://raw.githubusercontent.com/Miskler/genschema/refs/heads/main/assets/logo.webp" width="70%" alt="logo.webp" />
 
 *A powerful, intelligent library for generating JSON Schema from multiple JSON instances with **smart merging**, **advanced inference**, and **modular refinements**.*
 
