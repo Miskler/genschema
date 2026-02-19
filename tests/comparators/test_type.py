@@ -1,7 +1,12 @@
 import unittest
 
 from genschema.comparators.template import ProcessingContext, Resource
-from genschema.comparators.type import TypeComparator, infer_json_type, infer_schema_type
+from genschema.comparators.type import (
+    TypeComparator,
+    infer_json_type,
+    infer_schema_type,
+    infer_schema_types,
+)
 
 
 class TestInferJsonType(unittest.TestCase):
@@ -115,6 +120,33 @@ class TestInferSchemaType(unittest.TestCase):
 
     def test_no_type_with_other_keys(self):
         self.assertIsNone(infer_schema_type({"other": "key"}))
+
+
+class TestInferSchemaTypes(unittest.TestCase):
+    def test_non_dict_input(self):
+        self.assertEqual(infer_schema_types("not a dict"), [])
+        self.assertEqual(infer_schema_types(123), [])
+
+    def test_single_type(self):
+        self.assertEqual(infer_schema_types({"type": "string"}), ["string"])
+
+    def test_type_list(self):
+        self.assertEqual(infer_schema_types({"type": ["string", "null"]}), ["string", "null"])
+
+    def test_anyof_union(self):
+        schema = {"anyOf": [{"type": "string"}, {"type": "null"}]}
+        self.assertEqual(infer_schema_types(schema), ["string", "null"])
+
+    def test_oneof_union(self):
+        schema = {"oneOf": [{"type": "integer"}, {"type": "null"}]}
+        self.assertEqual(infer_schema_types(schema), ["integer", "null"])
+
+    def test_allof_intersection(self):
+        schema = {"allOf": [{"type": "string"}, {"type": "string", "format": "email"}]}
+        self.assertEqual(infer_schema_types(schema), ["string"])
+
+    def test_fallback_to_legacy_inference(self):
+        self.assertEqual(infer_schema_types({"properties": {}}), ["object"])
 
 
 class TestTypeComparator(unittest.TestCase):
@@ -242,3 +274,30 @@ class TestTypeComparator(unittest.TestCase):
         general, alts = self.comparator.process(ctx, "/some/env", {"other": "data"})
         self.assertEqual(general, {"type": "string", "j2sElementTrigger": ["s1"]})
         self.assertIsNone(alts)
+
+    def test_process_schema_anyof_keeps_all_types(self):
+        s1 = Resource("s1", "schema", {"anyOf": [{"type": "string"}, {"type": "null"}]})
+        ctx = ProcessingContext([s1], [], False)
+        general, alts = self.comparator.process(ctx, "", {})
+        self.assertIsNone(general)
+        self.assertEqual(
+            alts,
+            [
+                {"type": "string", "j2sElementTrigger": ["s1"]},
+                {"type": "null", "j2sElementTrigger": ["s1"]},
+            ],
+        )
+
+    def test_process_schema_anyof_and_json_string_keeps_nullable(self):
+        s1 = Resource("s1", "schema", {"anyOf": [{"type": "string"}, {"type": "null"}]})
+        j1 = Resource("j1", "json", "workday")
+        ctx = ProcessingContext([s1], [j1], False)
+        general, alts = self.comparator.process(ctx, "", {})
+        self.assertIsNone(general)
+        self.assertEqual(
+            alts,
+            [
+                {"type": "string", "j2sElementTrigger": ["j1", "s1"]},
+                {"type": "null", "j2sElementTrigger": ["s1"]},
+            ],
+        )

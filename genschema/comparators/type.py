@@ -35,6 +35,61 @@ def infer_schema_type(s: dict | str) -> None | str:
     return None
 
 
+def _unique_keep_order(values: list[str]) -> list[str]:
+    seen: set[str] = set()
+    out: list[str] = []
+    for value in values:
+        if value in seen:
+            continue
+        seen.add(value)
+        out.append(value)
+    return out
+
+
+def infer_schema_types(s: dict | str) -> list[str]:
+    """
+    Return all detectable schema types.
+    Unlike infer_schema_type(), this helper can extract types from unions
+    (type list / anyOf / oneOf / allOf).
+    """
+
+    if not isinstance(s, dict):
+        return []
+
+    t = s.get("type")
+    if isinstance(t, str):
+        return [t]
+    if isinstance(t, list):
+        return _unique_keep_order([item for item in t if isinstance(item, str)])
+
+    result: list[str] = []
+
+    for key in ("anyOf", "oneOf"):
+        variants = s.get(key)
+        if isinstance(variants, list):
+            for variant in variants:
+                result.extend(infer_schema_types(variant))
+
+    all_of = s.get("allOf")
+    if isinstance(all_of, list):
+        intersections: set[str] | None = None
+        for variant in all_of:
+            types = set(infer_schema_types(variant))
+            if not types:
+                continue
+            intersections = types if intersections is None else (intersections & types)
+        if intersections:
+            result.extend(sorted(intersections))
+
+    if result:
+        return _unique_keep_order(result)
+
+    inferred = infer_schema_type(s)
+    if inferred:
+        return [inferred]
+    return []
+
+
 class TypeComparator(Comparator):
     name = "type"
 
@@ -45,8 +100,7 @@ class TypeComparator(Comparator):
         type_map: dict[str, set[str]] = {}
 
         for s in ctx.schemas:
-            t = infer_schema_type(s.content)
-            if t:
+            for t in infer_schema_types(s.content):
                 type_map.setdefault(t, set()).add(s.id)
 
         for j in ctx.jsons:
