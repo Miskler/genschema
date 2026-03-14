@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 from typing import Literal, Optional
 
 from .comparators import TypeComparator
@@ -99,6 +100,13 @@ class Converter:
 
         return s_out, j_out
 
+    def _keys_matched_by_pattern(self, pattern: str, keys: list[str]) -> set[str]:
+        try:
+            regex = re.compile(pattern)
+        except re.error:
+            return set()
+        return {key for key in keys if regex.fullmatch(key)}
+
     def _split_array_ctx(
         self, ctx: ProcessingContext
     ) -> tuple[ProcessingContext, ProcessingContext]:
@@ -112,7 +120,10 @@ class Converter:
                     item_jsons.append(Resource(f"{j.id}/{i}", "json", el))
             elif isinstance(c, dict):
                 keys = self._collect_prop_names([], [j])
-                if self._pseudo_handler and self._pseudo_handler.is_pseudo_array(keys, ctx):
+                is_pseudo_array = False
+                if self._pseudo_handler:
+                    is_pseudo_array, _ = self._pseudo_handler.is_pseudo_array(keys, ctx)
+                if is_pseudo_array:
                     sorted_keys = sorted(keys, key=lambda k: int(k) if k.isdigit() else -1)
                     for i, k in enumerate(sorted_keys):
                         item_jsons.append(Resource(f"{j.id}/{i}", "json", c[k]))
@@ -132,7 +143,10 @@ class Converter:
                     item_schemas.append(Resource(f"{s.id}/items", "schema", c["items"]))
                 elif t == "object" and "properties" in c:
                     keys = sorted(c["properties"].keys())
-                    if self._pseudo_handler and self._pseudo_handler.is_pseudo_array(keys, ctx):
+                    is_pseudo_array = False
+                    if self._pseudo_handler:
+                        is_pseudo_array, _ = self._pseudo_handler.is_pseudo_array(keys, ctx)
+                    if is_pseudo_array:
                         sorted_keys = sorted(keys, key=lambda k: int(k) if k.isdigit() else -1)
                         for i, k in enumerate(sorted_keys):
                             item_schemas.append(
@@ -140,6 +154,43 @@ class Converter:
                             )
                     else:
                         obj_schemas.append(s)
+                elif t == "object" and isinstance(c.get("patternProperties"), dict):
+                    pattern_props = c["patternProperties"]
+                    if not self._pseudo_handler:
+                        obj_schemas.append(s)
+                        continue
+
+                    keys = self._collect_prop_names([], ctx.jsons)
+                    is_pseudo_array, _ = self._pseudo_handler.is_pseudo_array(keys, ctx)
+
+                    # If a branch is not pseudo-array, keep schema on object path.
+                    if not is_pseudo_array or not keys:
+                        obj_schemas.append(s)
+                        continue
+
+                    matched_patterns: list[str] = []
+                    covered_keys: set[str] = set()
+                    for pattern in pattern_props:
+                        matched_keys = self._keys_matched_by_pattern(pattern, keys)
+                        if not matched_keys:
+                            continue
+                        matched_patterns.append(pattern)
+                        covered_keys.update(matched_keys)
+
+                    # Branch contains non-pattern keys: do not map patternProperties as items.
+                    has_non_pattern_keys = any(key not in covered_keys for key in keys)
+                    if has_non_pattern_keys or not matched_patterns:
+                        obj_schemas.append(s)
+                        continue
+
+                    for index, pattern in enumerate(matched_patterns):
+                        item_schemas.append(
+                            Resource(
+                                f"{s.id}/patternProperties/{index}",
+                                "schema",
+                                pattern_props[pattern],
+                            )
+                        )
                 else:
                     obj_schemas.append(s)
             else:
