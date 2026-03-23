@@ -52,7 +52,7 @@ Options
     Disable inference of ``format`` keywords (email, date, uri, etc.).
 
 ``--no-enum``
-    Disable inference of ``enum`` for compact string and integer fields.
+    Disable inference of ``enum`` for compact string fields.
 
 ``--no-required``
     Disable automatic population of the ``required`` array.

@@ -59,7 +59,7 @@ Basic usage example:
 
     # The core logic is driven by a chain of comparators / transformers
     conv.register(FormatComparator())          # Infers format keywords (date, email, uuid, uri, etc.)
-    conv.register(EnumComparator())            # Infers enum for low-cardinality string/integer fields
+    conv.register(EnumComparator())            # Infers enum for low-cardinality string fields
                                                # after format detection and persists free-text rejections
     conv.register(RequiredComparator())        # Determines the "required" array
     conv.register(EmptyComparator())           # Handles min/maxProperties, min/maxItems,
@@ -82,3 +82,8 @@ See also
 
 - :mod:`genschema.pipeline` — detailed documentation of the internal pipeline and comparator system
 - :class:`genschema.pseudo_arrays` — pseudo-array detection and normalization logic
+
+``EnumComparator`` intentionally ignores integer fields. In practice numeric
+values are too ambiguous: low-cardinality ids, years, counters, indexes, and
+various external codes are common and cannot be separated from true enums by a
+simple safe heuristic.

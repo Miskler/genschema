@@ -26,7 +26,7 @@
 - 🎯 **Intelligent Merging** – Combines multiple JSON instances into a single schema
 - 🔗 **Configurable Combinators** – Use `anyOf` or `oneOf` for conflicting types/properties
 - 🧠 **Advanced Inference** – Automatic format detection (email, uuid, date-time, etc.)
-- 🏷️ **Enum Inference** – Promotes compact string and integer fields to `enum` with safety guards
+- 🏷️ **Enum Inference** – Promotes compact string fields to `enum` with safety guards
 - 📍 **Required & Empty Handling** – Smart inference of `required`, `minProperties`, `minItems`, etc.
 - 🔍 **Pseudo-Array Detection** – Treats inhomogeneous arrays as object-like structures when needed
 - ⚡ **Modular Pipeline** – Chain of configurable comparators for full control
@@ -69,7 +69,7 @@ conv.add_json({"name": "Alice", "email": "alice@example.com"})
 
 # Register optional refinements
 conv.register(FormatComparator())  # Run format detection first
-conv.register(EnumComparator())  # Then infer enum for short low-cardinality string/integer fields
+conv.register(EnumComparator())  # Then infer enum for short low-cardinality string fields
 conv.register(RequiredComparator())
 conv.register(EmptyComparator())
 conv.register(DeleteElement())
@@ -96,6 +96,10 @@ genschema data.json --no-format --no-enum --no-required --no-pseudo-array
 # Read from stdin
 cat data.json | genschema - -o schema.json
 ```
+
+`EnumComparator` intentionally works only for string fields. For numeric
+columns it is technically hard to distinguish true enums from ordinary ids,
+years, counters, indexes, and external codes with acceptable reliability.
 
 <div align="center">
 

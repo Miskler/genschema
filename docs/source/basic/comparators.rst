@@ -33,7 +33,7 @@ genschema ships with several ready-to-use comparators in addition to the core
 * ``RequiredComparator`` — computes the ``required`` list for object properties.
 * ``EmptyComparator`` — adds empty/non-empty constraints for arrays and objects.
 * ``SchemaVersionComparator`` — sets the root ``$schema`` value.
-* ``EnumComparator`` — promotes compact string/integer fields to ``enum`` and
+* ``EnumComparator`` — promotes compact string fields to ``enum`` and
   stores a reject flag for fields that look more like free text.
 
 Where Comparators Run
@@ -201,6 +201,11 @@ shown by ``genschema --help``. If you add your own comparator, you can:
 
 * Register it in your own Python script (recommended), or
 * Extend ``genschema/cli.py`` to include it in the CLI pipeline.
+
+``EnumComparator`` intentionally does not support integer enums. Even with low
+cardinality, numeric fields are commonly ids, years, indexes, counters, or
+external codes, so distinguishing them from semantic enums is not reliable
+enough for safe automatic inference.
 
 Troubleshooting
 ---------------

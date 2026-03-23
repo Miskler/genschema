@@ -1,7 +1,7 @@
 """Enum inference comparator.
 
 This module contains :class:`EnumComparator`, a comparator that promotes
-low-cardinality scalar fields to JSON Schema ``enum`` definitions.
+low-cardinality string fields to JSON Schema ``enum`` definitions.
 It is designed to work with mixed input sources:
 
 - raw JSON instances added via :meth:`genschema.pipeline.Converter.add_json`
@@ -24,7 +24,14 @@ ENUM_REJECT_FLAG = "j2sEnumRejected"
 
 @dataclass
 class EnumComparator(Comparator):
-    """Infer ``enum`` for compact scalar fields and persist rejection decisions."""
+    """Infer ``enum`` for compact string fields and persist rejection decisions.
+
+    Integer support is intentionally excluded. In practice it is very hard to
+    build a reliable heuristic that consistently distinguishes real numeric
+    enums from ordinary identifiers, counters, years, status codes, and other
+    non-enum integer fields. A false positive here is much more damaging than a
+    missed enum, so the comparator only handles strings.
+    """
 
     name = "enum"
 
@@ -73,45 +80,37 @@ class EnumComparator(Comparator):
         """Return ``True`` when a schema node explicitly matches the target type."""
         return isinstance(schema, dict) and schema.get("type") == expected_type
 
-    def _collect_schema_values(self, ctx: ProcessingContext, expected_type: str) -> list[str | int]:
+    def _collect_schema_values(self, ctx: ProcessingContext) -> list[str]:
         """Collect candidate enum values from input schemas.
 
-        Only explicit schema enums from nodes whose ``type`` matches
-        ``expected_type`` are considered.
+        Only explicit schema enums from nodes whose ``type`` is ``"string"``
+        are considered.
         """
-        values: list[str | int] = []
+        values: list[str] = []
         for schema in ctx.schemas:
             content = schema.content
-            if not self._schema_type_matches(content, expected_type):
+            if not self._schema_type_matches(content, "string"):
                 continue
             enum_values = content.get("enum")
             if not isinstance(enum_values, list):
                 continue
             for value in enum_values:
-                if expected_type == "string" and isinstance(value, str):
-                    values.append(value)
-                elif (
-                    expected_type == "integer"
-                    and isinstance(value, int)
-                    and not isinstance(value, bool)
-                ):
+                if isinstance(value, str):
                     values.append(value)
         return values
 
-    def _collect_json_values(self, ctx: ProcessingContext, expected_type: str) -> list[str | int]:
+    def _collect_json_values(self, ctx: ProcessingContext) -> list[str]:
         """Collect candidate enum values from raw JSON resources."""
-        values: list[str | int] = []
+        values: list[str] = []
         for resource in ctx.jsons:
             value = resource.content
-            if expected_type == "string" and isinstance(value, str):
-                values.append(value)
-            elif (
-                expected_type == "integer"
-                and isinstance(value, int)
-                and not isinstance(value, bool)
-            ):
+            if isinstance(value, str):
                 values.append(value)
         return values
+
+    def _has_blank_string_value(self, values: list[str]) -> bool:
+        """Return ``True`` when string candidates contain blank values."""
+        return any(isinstance(value, str) and value.strip() == "" for value in values)
 
     def _has_schema_flag(self, ctx: ProcessingContext, flag_name: str) -> bool:
         """Check whether any input schema already contains the reject flag."""
@@ -147,7 +146,7 @@ class EnumComparator(Comparator):
         the persistent reject flag.
         """
         current_type = prev_result.get("type")
-        if current_type not in {"string", "integer"}:
+        if current_type != "string":
             return False
         if prev_result.get(self.reject_flag) is True:
             return False
@@ -167,7 +166,6 @@ class EnumComparator(Comparator):
         removed because the returned update contains only the reject marker and
         omits ``enum``.
         """
-        current_type = prev_result["type"]
         schema_format = self._first_schema_format(ctx)
 
         if schema_format is not None:
@@ -180,20 +178,21 @@ class EnumComparator(Comparator):
         if field_name in self.excluded_field_names:
             return self._reject()
 
-        values = self._collect_schema_values(ctx, current_type)
-        values.extend(self._collect_json_values(ctx, current_type))
+        values = self._collect_schema_values(ctx)
+        values.extend(self._collect_json_values(ctx))
 
         if not values:
             return None, None
+
+        if self._has_blank_string_value(values):
+            return self._reject()
 
         unique_values = list(dict.fromkeys(values))
         if len(unique_values) > self.max_unique_values:
             return self._reject()
 
-        if current_type == "string":
-            string_values = [value for value in unique_values if isinstance(value, str)]
-            avg_length = sum(len(value) for value in string_values) / len(string_values)
-            if avg_length > self.max_avg_string_length:
-                return self._reject()
+        avg_length = sum(len(value) for value in unique_values) / len(unique_values)
+        if avg_length > self.max_avg_string_length:
+            return self._reject()
 
         return {"enum": unique_values}, None

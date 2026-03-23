@@ -16,8 +16,8 @@ class TestEnumComparatorUnit(unittest.TestCase):
     def test_can_process_string_type(self):
         self.assertTrue(self.comparator.can_process(None, "/properties/status", {"type": "string"}))
 
-    def test_can_process_integer_type(self):
-        self.assertTrue(
+    def test_can_process_rejects_integer_type(self):
+        self.assertFalse(
             self.comparator.can_process(None, "/properties/status", {"type": "integer"})
         )
 
@@ -87,7 +87,7 @@ class TestEnumComparatorIntegration(unittest.TestCase):
         self.assertCountEqual(status_schema["enum"], ["draft", "published"])
         self.assertNotIn(ENUM_REJECT_FLAG, status_schema)
 
-    def test_builds_integer_enum_from_json_values(self):
+    def test_does_not_build_integer_enum_from_json_values(self):
         converter = self._make_converter(EnumComparator())
         converter.add_json({"code": 1})
         converter.add_json({"code": 2})
@@ -97,7 +97,7 @@ class TestEnumComparatorIntegration(unittest.TestCase):
         code_schema = self._property_schema(result, "code")
 
         self.assertEqual(code_schema["type"], "integer")
-        self.assertCountEqual(code_schema["enum"], [1, 2])
+        self.assertNotIn("enum", code_schema)
         self.assertNotIn(ENUM_REJECT_FLAG, code_schema)
 
     def test_merges_enum_candidates_from_schema_and_json(self):
@@ -183,6 +183,30 @@ class TestEnumComparatorIntegration(unittest.TestCase):
         self.assertEqual(comment_schema["type"], "string")
         self.assertNotIn("enum", comment_schema)
         self.assertTrue(comment_schema.get(ENUM_REJECT_FLAG))
+
+    def test_rejects_blank_string_values_instead_of_building_empty_enum_item(self):
+        converter = self._make_converter(EnumComparator())
+        converter.add_json({"carbohydrates": ""})
+        converter.add_json({"carbohydrates": ""})
+
+        result = converter.run()
+        carbohydrates_schema = self._property_schema(result, "carbohydrates")
+
+        self.assertEqual(carbohydrates_schema["type"], "string")
+        self.assertNotIn("enum", carbohydrates_schema)
+        self.assertTrue(carbohydrates_schema.get(ENUM_REJECT_FLAG))
+
+    def test_rejects_whitespace_only_string_values(self):
+        converter = self._make_converter(EnumComparator())
+        converter.add_json({"protein": "   "})
+        converter.add_json({"protein": "\t"})
+
+        result = converter.run()
+        protein_schema = self._property_schema(result, "protein")
+
+        self.assertEqual(protein_schema["type"], "string")
+        self.assertNotIn("enum", protein_schema)
+        self.assertTrue(protein_schema.get(ENUM_REJECT_FLAG))
 
     def test_preserves_reject_flag_and_blocks_enum_on_next_run(self):
         first = self._make_converter(EnumComparator())
