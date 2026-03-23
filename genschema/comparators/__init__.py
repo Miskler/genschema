@@ -1,5 +1,6 @@
 from .delete_element import DeleteElement
 from .empty import EmptyComparator
+from .enum import EnumComparator
 from .flag import FlagMaker
 from .format import FormatComparator
 from .no_additional_prop import NoAdditionalProperties
@@ -9,6 +10,7 @@ from .type import TypeComparator
 
 __all__ = [
     "FormatComparator",
+    "EnumComparator",
     "TypeComparator",
     "RequiredComparator",
     "FlagMaker",

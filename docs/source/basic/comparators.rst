@@ -23,6 +23,19 @@ comparator can:
 * Provide alternative nodes (for ``anyOf`` / ``oneOf``).
 * Mark fields for deletion using ``ToDelete``.
 
+Built-in Comparator Examples
+----------------------------
+
+genschema ships with several ready-to-use comparators in addition to the core
+``TypeComparator``. Common examples include:
+
+* ``FormatComparator`` — infers string ``format`` such as ``email`` or ``date``.
+* ``RequiredComparator`` — computes the ``required`` list for object properties.
+* ``EmptyComparator`` — adds empty/non-empty constraints for arrays and objects.
+* ``SchemaVersionComparator`` — sets the root ``$schema`` value.
+* ``EnumComparator`` — promotes compact string/integer fields to ``enum`` and
+  stores a reject flag for fields that look more like free text.
+
 Where Comparators Run
 ---------------------
 
@@ -172,9 +185,11 @@ when creating a ``Converter``. All other comparators are registered via ``regist
 .. code-block:: python
 
    from genschema import Converter
-   from genschema.comparators import RequiredComparator, SchemaVersionComparator
+   from genschema.comparators import EnumComparator, FormatComparator, RequiredComparator, SchemaVersionComparator
 
    conv = Converter()
+   conv.register(FormatComparator())
+   conv.register(EnumComparator())
    conv.register(RequiredComparator())
    conv.register(SchemaVersionComparator())
 

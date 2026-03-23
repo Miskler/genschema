@@ -26,6 +26,7 @@
 - 🎯 **Intelligent Merging** – Combines multiple JSON instances into a single schema
 - 🔗 **Configurable Combinators** – Use `anyOf` or `oneOf` for conflicting types/properties
 - 🧠 **Advanced Inference** – Automatic format detection (email, uuid, date-time, etc.)
+- 🏷️ **Enum Inference** – Promotes compact string and integer fields to `enum` with safety guards
 - 📍 **Required & Empty Handling** – Smart inference of `required`, `minProperties`, `minItems`, etc.
 - 🔍 **Pseudo-Array Detection** – Treats inhomogeneous arrays as object-like structures when needed
 - ⚡ **Modular Pipeline** – Chain of configurable comparators for full control
@@ -49,6 +50,7 @@ pip install genschema
 ```python
 from genschema import Converter, PseudoArrayHandler
 from genschema.comparators import (
+    EnumComparator,
     FormatComparator,
     RequiredComparator,
     EmptyComparator,
@@ -66,7 +68,8 @@ conv.add_json("example2.json")
 conv.add_json({"name": "Alice", "email": "alice@example.com"})
 
 # Register optional refinements
-conv.register(FormatComparator())
+conv.register(FormatComparator())  # Run format detection first
+conv.register(EnumComparator())  # Then infer enum for short low-cardinality string/integer fields
 conv.register(RequiredComparator())
 conv.register(EmptyComparator())
 conv.register(DeleteElement())
@@ -88,7 +91,7 @@ genschema input1.json input2.json -o schema.json
 genschema *.json --base-of oneOf -o schema.json
 
 # Disable refinements
-genschema data.json --no-format --no-required --no-pseudo-array
+genschema data.json --no-format --no-enum --no-required --no-pseudo-array
 
 # Read from stdin
 cat data.json | genschema - -o schema.json

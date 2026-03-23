@@ -15,6 +15,7 @@ Features
   - Required properties inference
   - Empty value handling (``null`` vs absence)
   - Element deletion in special cases (e.g. pseudo-array markers)
+- Extensible comparator pipeline for custom refinements such as ``EnumComparator``
 - Output to file or stdout
 - Rich console output with error reporting and timing
 
@@ -49,6 +50,9 @@ Options
 
 ``--no-format``
     Disable inference of ``format`` keywords (email, date, uri, etc.).
+
+``--no-enum``
+    Disable inference of ``enum`` for compact string and integer fields.
 
 ``--no-required``
     Disable automatic population of the ``required`` array.
@@ -101,7 +105,7 @@ Disable most refinements (minimal schema)
 
 .. code-block:: bash
 
-   genschema messy-data.json --no-format --no-required --no-empty --no-pseudo-array -o minimal.json
+   genschema messy-data.json --no-format --no-enum --no-required --no-empty --no-pseudo-array -o minimal.json
 
 Exit Codes
 ----------

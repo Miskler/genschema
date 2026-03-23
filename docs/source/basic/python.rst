@@ -11,6 +11,7 @@ Basic usage example:
 
     from genschema import Converter, PseudoArrayHandler
     from genschema.comparators import (
+        EnumComparator,
         FormatComparator,
         RequiredComparator,
         EmptyComparator,
@@ -58,6 +59,8 @@ Basic usage example:
 
     # The core logic is driven by a chain of comparators / transformers
     conv.register(FormatComparator())          # Infers format keywords (date, email, uuid, uri, etc.)
+    conv.register(EnumComparator())            # Infers enum for low-cardinality string/integer fields
+                                               # after format detection and persists free-text rejections
     conv.register(RequiredComparator())        # Determines the "required" array
     conv.register(EmptyComparator())           # Handles min/maxProperties, min/maxItems,
                                                # and completely empty values/objects/arrays

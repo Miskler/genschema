@@ -13,9 +13,7 @@ class RequiredComparator(Comparator):
 
     def can_process(self, ctx: ProcessingContext, env: str, node: dict) -> bool:
         # обрабатываем только объекты
-        return (
-            (node.get("type") == "object" and not node.get("isPseudoArray", False))
-        )
+        return node.get("type") == "object" and not node.get("isPseudoArray", False)
 
     def process(self, ctx: ProcessingContext, env: str, node: dict) -> ComparatorResult:
         required_sets: list[set[str]] = []
