@@ -63,6 +63,17 @@ class TestEnumComparatorUnit(unittest.TestCase):
             )
         )
 
+    def test_can_process_rejects_union_nodes(self):
+        for keyword in ("anyOf", "oneOf", "allOf"):
+            with self.subTest(keyword=keyword):
+                self.assertFalse(
+                    self.comparator.can_process(
+                        None,
+                        "/properties/status",
+                        {"type": "string", keyword: [{"type": "string"}]},
+                    )
+                )
+
 
 class TestEnumComparatorIntegration(unittest.TestCase):
     def _make_converter(self, *comparators):
@@ -207,6 +218,18 @@ class TestEnumComparatorIntegration(unittest.TestCase):
         self.assertEqual(protein_schema["type"], "string")
         self.assertNotIn("enum", protein_schema)
         self.assertTrue(protein_schema.get(ENUM_REJECT_FLAG))
+
+    def test_rejects_digit_only_string_values(self):
+        converter = self._make_converter(EnumComparator())
+        converter.add_json({"year": "2023"})
+        converter.add_json({"year": "2024"})
+
+        result = converter.run()
+        year_schema = self._property_schema(result, "year")
+
+        self.assertEqual(year_schema["type"], "string")
+        self.assertNotIn("enum", year_schema)
+        self.assertTrue(year_schema.get(ENUM_REJECT_FLAG))
 
     def test_preserves_reject_flag_and_blocks_enum_on_next_run(self):
         first = self._make_converter(EnumComparator())

@@ -112,6 +112,10 @@ class EnumComparator(Comparator):
         """Return ``True`` when string candidates contain blank values."""
         return any(isinstance(value, str) and value.strip() == "" for value in values)
 
+    def _has_digit_only_string_value(self, values: list[str]) -> bool:
+        """Return ``True`` when string candidates contain digit-only values."""
+        return any(value.isdigit() for value in values)
+
     def _has_schema_flag(self, ctx: ProcessingContext, flag_name: str) -> bool:
         """Check whether any input schema already contains the reject flag."""
         for schema in ctx.schemas:
@@ -154,6 +158,8 @@ class EnumComparator(Comparator):
             return False
         if "format" in prev_result:
             return False
+        if any(key in prev_result for key in ("anyOf", "oneOf", "allOf")):
+            return False
 
         return True
 
@@ -185,6 +191,8 @@ class EnumComparator(Comparator):
             return None, None
 
         if self._has_blank_string_value(values):
+            return self._reject()
+        if self._has_digit_only_string_value(values):
             return self._reject()
 
         unique_values = list(dict.fromkeys(values))
