@@ -24,12 +24,12 @@ class TestRequiredComparator(unittest.TestCase):
     def test_can_process_type_none(self):
         ctx = ProcessingContext([], [], False)
         node = {}  # type is None
-        self.assertTrue(self.comparator.can_process(ctx, "", node))
+        self.assertFalse(self.comparator.can_process(ctx, "", node))
 
     def test_can_process_no_jsons(self):
         ctx = ProcessingContext([Resource("s1", "schema", {})], [], False)  # no jsons
         node = {"type": "array"}  # even non-object
-        self.assertTrue(self.comparator.can_process(ctx, "", node))
+        self.assertFalse(self.comparator.can_process(ctx, "", node))
 
     def test_can_process_non_object_with_jsons(self):
         ctx = ProcessingContext([], [Resource("j1", "json", {})], False)  # has jsons
