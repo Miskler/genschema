@@ -18,7 +18,7 @@ class FormatDetector:
             ): "uuid",
             re.compile(r"^\d{4}-\d{2}-\d{2}$"): "date",
             re.compile(
-                r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})?$"
+                r"^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})?$"
             ): "date-time",
             re.compile(r"^https?://[^\s/$.?#].[^\s]*$", re.I): "uri",
             re.compile(

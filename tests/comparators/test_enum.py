@@ -1,6 +1,7 @@
 import unittest
 
 from genschema.comparators.enum import EnumComparator
+from genschema.comparators.format import FormatComparator
 from genschema.pipeline import Converter
 
 ENUM_REJECT_FLAG = "j2sEnumRejected"
@@ -169,6 +170,18 @@ class TestEnumComparatorIntegration(unittest.TestCase):
         self.assertEqual(email_schema["type"], "string")
         self.assertEqual(email_schema.get("format"), "email")
         self.assertNotIn("enum", email_schema)
+
+    def test_does_not_build_enum_for_datetime_strings_detected_by_format_comparator(self):
+        converter = self._make_converter(FormatComparator(), EnumComparator())
+        converter.add_json({"updatedAt": "2025-02-24 11:30:47"})
+        converter.add_json({"updatedAt": "2024-12-19 10:53:15"})
+
+        result = converter.run()
+        updated_at_schema = self._property_schema(result, "updatedAt")
+
+        self.assertEqual(updated_at_schema["type"], "string")
+        self.assertEqual(updated_at_schema.get("format"), "date-time")
+        self.assertNotIn("enum", updated_at_schema)
 
     def test_rejects_when_unique_values_exceed_default_threshold(self):
         converter = self._make_converter(EnumComparator())
