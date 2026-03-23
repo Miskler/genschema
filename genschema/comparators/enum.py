@@ -14,12 +14,14 @@ field will not be reconsidered as an enum candidate on future runs.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from typing import Any
 
 from .template import Comparator, ComparatorResult, ProcessingContext
 
 ENUM_REJECT_FLAG = "j2sEnumRejected"
+NUMERIC_LIKE_STRING_RE = re.compile(r"^[+-]?(?:\d+|\d+\.\d+|\d+\.|\.\d+)$")
 
 
 @dataclass
@@ -116,6 +118,10 @@ class EnumComparator(Comparator):
         """Return ``True`` when string candidates contain digit-only values."""
         return any(value.isdigit() for value in values)
 
+    def _has_float_like_string_value(self, values: list[str]) -> bool:
+        """Return ``True`` when string candidates contain float-like values."""
+        return any(NUMERIC_LIKE_STRING_RE.fullmatch(value) is not None for value in values)
+
     def _has_schema_flag(self, ctx: ProcessingContext, flag_name: str) -> bool:
         """Check whether any input schema already contains the reject flag."""
         for schema in ctx.schemas:
@@ -193,6 +199,8 @@ class EnumComparator(Comparator):
         if self._has_blank_string_value(values):
             return self._reject()
         if self._has_digit_only_string_value(values):
+            return self._reject()
+        if self._has_float_like_string_value(values):
             return self._reject()
 
         unique_values = list(dict.fromkeys(values))

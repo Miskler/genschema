@@ -244,6 +244,18 @@ class TestEnumComparatorIntegration(unittest.TestCase):
         self.assertNotIn("enum", year_schema)
         self.assertTrue(year_schema.get(ENUM_REJECT_FLAG))
 
+    def test_rejects_float_like_string_values(self):
+        converter = self._make_converter(EnumComparator())
+        converter.add_json({"price": "59.00"})
+        converter.add_json({"price": "79.50"})
+
+        result = converter.run()
+        price_schema = self._property_schema(result, "price")
+
+        self.assertEqual(price_schema["type"], "string")
+        self.assertNotIn("enum", price_schema)
+        self.assertTrue(price_schema.get(ENUM_REJECT_FLAG))
+
     def test_preserves_reject_flag_and_blocks_enum_on_next_run(self):
         first = self._make_converter(EnumComparator())
         for index in range(17):
