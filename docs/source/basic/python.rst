@@ -18,6 +18,10 @@ Basic usage example:
         DeleteElement,
         TypeComparator,
     )
+    from genschema.postprocessing import (
+        SchemaReferenceExtractionConfig,
+        SchemaReferencePostprocessor,
+    )
     import time
 
     start = time.time()
@@ -72,18 +76,58 @@ Basic usage example:
     # Execute the schema generation pipeline
     result = conv.run()
 
+    # Optional independent postprocessing step:
+    # extract repeated / similar fragments into $defs + $ref
+    result = SchemaReferencePostprocessor.process(
+        result,
+        SchemaReferenceExtractionConfig(
+            similarity_threshold=0.85,
+            min_total_keys=3,
+        ),
+    )
+
     print(result)
 
     # Optional: show execution time
     print(f"Generated in {time.time() - start:.4f} seconds")
+
+``EnumComparator`` intentionally ignores integer fields. In practice numeric
+values are too ambiguous: low-cardinality ids, years, counters, indexes, and
+various external codes are common and cannot be separated from true enums by a
+simple safe heuristic.
+
+Postprocessing shared references
+--------------------------------
+
+``SchemaReferencePostprocessor`` runs **after** ``conv.run()``. It is
+intentionally independent from ``Converter`` itself and can be applied to any
+generated schema dict.
+
+Typical use cases:
+
+- extract repeated fragments into ``$defs``
+- merge highly similar fragments, not only exact duplicates
+- reduce schema duplication after generation
+
+Minimal example:
+
+.. code-block:: python
+
+    schema = conv.run()
+    schema = SchemaReferencePostprocessor.process(schema)
+
+Important settings:
+
+- ``similarity_threshold`` — how close structures must be to be grouped
+- ``min_total_keys`` — minimum total number of structural keys before extraction is worth it
+- ``min_occurrences`` — minimum number of occurrences in one group
+
+This also works for **one input JSON** if that document contains repeated or
+sufficiently similar nested structures.
 
 See also
 --------
 
 - :mod:`genschema.pipeline` — detailed documentation of the internal pipeline and comparator system
 - :class:`genschema.pseudo_arrays` — pseudo-array detection and normalization logic
-
-``EnumComparator`` intentionally ignores integer fields. In practice numeric
-values are too ambiguous: low-cardinality ids, years, counters, indexes, and
-various external codes are common and cannot be separated from true enums by a
-simple safe heuristic.
+- :mod:`genschema.postprocessing.schema_references` — reference extraction postprocessor

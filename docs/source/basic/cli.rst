@@ -4,6 +4,12 @@ genschema CLI Tool
 **genschema** is a command-line utility that generates JSON Schema from one or more JSON documents.  
 It supports multiple input files, stdin input, smart type merging with ``anyOf``/``oneOf``, pseudo-array detection, and several optional schema refinement comparators.
 
+.. note::
+
+   The CLI can now run shared-reference extraction directly with
+   ``--extract-refs``. The Python API still exposes more advanced tuning
+   options when you need custom merge or naming strategies.
+
 Features
 --------
 
@@ -63,6 +69,25 @@ Options
 ``--no-delete-element``
     Disable all ``DeleteElement`` comparators (including pseudo-array cleanup).
 
+``--extract-refs``
+    Run reference-extraction postprocessing and emit shared ``$defs`` / ``$ref`` blocks.
+
+``--refs-similarity-threshold`` FLOAT
+    Similarity threshold for grouping reference candidates.
+    Default: ``0.85``
+
+``--refs-min-total-keys`` INT
+    Minimum total number of structural keys before extraction is applied.
+    Default: ``3``
+
+``--refs-min-occurrences`` INT
+    Minimum number of similar occurrences required for extraction.
+    Default: ``2``
+
+``--refs-defs-key`` TEXT
+    Definition container key for extracted refs.
+    Default: ``$defs``
+
 Examples
 --------
 
@@ -99,6 +124,20 @@ Use oneOf instead of anyOf
 .. code-block:: bash
 
    genschema event-log-*.json --base-of oneOf -o events.schema.json
+
+Extract shared refs
+~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: bash
+
+   genschema input.json --extract-refs -o schema.json
+
+Tune ref extraction
+~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: bash
+
+   genschema input.json --extract-refs --refs-similarity-threshold 0.9 --refs-min-total-keys 4 -o schema.json
 
 Disable most refinements (minimal schema)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

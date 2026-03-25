@@ -29,6 +29,7 @@
 - 🏷️ **Enum Inference** – Promotes compact string fields to `enum` with safety guards
 - 📍 **Required & Empty Handling** – Smart inference of `required`, `minProperties`, `minItems`, etc.
 - 🔍 **Pseudo-Array Detection** – Treats inhomogeneous arrays as object-like structures when needed
+- ♻️ **Reference Extraction Postprocessing** – Moves repeated or similar fragments into `$defs` / `$ref`
 - ⚡ **Modular Pipeline** – Chain of configurable comparators for full control
 - 🛠️ **CLI & Python API** – Flexible usage from command line or code
 - 📝 **Rich Output** – Colored console feedback with timing and instance count
@@ -56,6 +57,10 @@ from genschema.comparators import (
     EmptyComparator,
     DeleteElement,
 )
+from genschema.postprocessing import (
+    SchemaReferenceExtractionConfig,
+    SchemaReferencePostprocessor,
+)
 
 conv = Converter(
     pseudo_handler=PseudoArrayHandler(),
@@ -78,8 +83,22 @@ conv.register(DeleteElement("isPseudoArray"))
 # Generate schema
 result = conv.run()
 
+# Optional independent postprocessing:
+# extract repeated / similar fragments into $defs + $ref
+result = SchemaReferencePostprocessor.process(
+    result,
+    SchemaReferenceExtractionConfig(
+        similarity_threshold=0.85,
+        min_total_keys=3,
+    ),
+)
+
 print(result)  # Pretty-printed JSON Schema
 ```
+
+`SchemaReferencePostprocessor` is intentionally separate from `Converter`: it
+works on an already generated schema, including schemas built from a single JSON
+document if that document contains repeated or sufficiently similar structures.
 
 ### CLI Usage
 
@@ -90,12 +109,21 @@ genschema input1.json input2.json -o schema.json
 # Use oneOf instead of anyOf
 genschema *.json --base-of oneOf -o schema.json
 
+# Extract shared refs directly from CLI
+genschema input.json --extract-refs -o schema.json
+
+# Tune reference extraction
+genschema input.json --extract-refs --refs-similarity-threshold 0.9 --refs-min-total-keys 4 -o schema.json
+
 # Disable refinements
 genschema data.json --no-format --no-enum --no-required --no-pseudo-array
 
 # Read from stdin
 cat data.json | genschema - -o schema.json
 ```
+
+For advanced reference-extraction customization, the Python API still exposes
+more knobs than the CLI.
 
 `EnumComparator` intentionally works only for string fields. For numeric
 columns it is technically hard to distinguish true enums from ordinary ids,

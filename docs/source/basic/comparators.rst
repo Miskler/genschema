@@ -35,6 +35,9 @@ genschema ships with several ready-to-use comparators in addition to the core
 * ``SchemaVersionComparator`` — sets the root ``$schema`` value.
 * ``EnumComparator`` — promotes compact string fields to ``enum`` and
   stores a reject flag for fields that look more like free text.
+* ``PreserveCommonKeywordsComparator`` — restores identical non-structural
+  schema keywords from input schemas after the rest of the merge pipeline has
+  finished.
 
 Where Comparators Run
 ---------------------

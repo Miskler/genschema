@@ -14,11 +14,15 @@ from .comparators import (
     RequiredComparator,
     SchemaVersionComparator,
 )
+from .postprocessing import (
+    SchemaReferenceExtractionConfig,
+    SchemaReferencePostprocessor,
+)
 
 console = Console()
 
 
-def main() -> None:
+def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Generate JSON Schema from JSON input using genschema.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -26,6 +30,7 @@ def main() -> None:
 Examples:
   genschema input.json -o schema.json
   genschema input1.json input2.json --base-of oneOf
+  genschema input.json --extract-refs -o schema.json
   cat input.json | genschema -
   genschema --base-of anyOf < input.json
   genschema dir/file1.json dir/file2.json -o schema.json
@@ -63,13 +68,47 @@ Examples:
     parser.add_argument(
         "--no-delete-element", action="store_true", help="Disable DeleteElement comparators."
     )
+    parser.add_argument(
+        "--extract-refs",
+        action="store_true",
+        help="Run reference-extraction postprocessing and emit shared $defs/$ref blocks.",
+    )
+    parser.add_argument(
+        "--refs-similarity-threshold",
+        type=float,
+        default=0.85,
+        help="Similarity threshold for grouping shared-reference candidates (default: 0.85).",
+    )
+    parser.add_argument(
+        "--refs-min-total-keys",
+        type=int,
+        default=3,
+        help="Minimum total number of structural keys before extraction is applied (default: 3).",
+    )
+    parser.add_argument(
+        "--refs-min-occurrences",
+        type=int,
+        default=2,
+        help="Minimum number of similar occurrences required for extraction (default: 2).",
+    )
+    parser.add_argument(
+        "--refs-defs-key",
+        default="$defs",
+        help="Definition container key used for extracted shared refs (default: $defs).",
+    )
+    return parser
+
+
+def main(argv: list[str] | None = None) -> None:
+    parser = _build_parser()
+    raw_args = sys.argv[1:] if argv is None else argv
 
     # If no arguments, show help and exit
-    if len(sys.argv) == 1:
+    if not raw_args:
         parser.print_help(sys.stderr)
         sys.exit(1)
 
-    args = parser.parse_args()
+    args = parser.parse_args(raw_args)
 
     # Collect input data
     datas = []
@@ -135,6 +174,22 @@ Examples:
     except Exception as e:
         console.print(f"[red]Error generating schema: {e}[/red]")
         sys.exit(1)
+
+    if args.extract_refs:
+        try:
+            refs_config = SchemaReferenceExtractionConfig(
+                similarity_threshold=args.refs_similarity_threshold,
+                min_total_keys=args.refs_min_total_keys,
+                min_occurrences=args.refs_min_occurrences,
+                defs_key=args.refs_defs_key,
+                merge_base_of=args.base_of,
+                merge_pseudo_handler=pseudo_handler,
+            )
+            result = SchemaReferencePostprocessor.process(result, refs_config)
+        except Exception as e:
+            console.print(f"[red]Error extracting schema references: {e}[/red]")
+            sys.exit(1)
+
     elapsed = round(time.time() - start_time, 4)
 
     # Output result
@@ -152,6 +207,10 @@ Examples:
     # Execution info
     instances_word = "instance" if len(datas) == 1 else "instances"
     console.print(f"Generated from {len(datas)} JSON {instances_word}.")
+    if args.extract_refs:
+        defs = result.get(args.refs_defs_key, {})
+        defs_count = len(defs) if isinstance(defs, dict) else 0
+        console.print(f"Extracted {defs_count} shared definitions into {args.refs_defs_key}.")
     console.print(f"Elapsed time: {elapsed} sec.")
 
 
